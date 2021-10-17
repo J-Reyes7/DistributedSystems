@@ -22,6 +22,12 @@ def send(msg):
     socket_sub1.send(message)
 
 while True:
-    send(input('Enter message:'))
-    print(socket_sub1.recv(3000).decode(format))
+    send(input('Enter stock ticker ($):'))
+    processing = True
+    while processing:
+        res = socket_sub1.recv(1024).decode(format)
+        print(res)
+        if "processing" not in res:
+            processing = False
+        # print(socket_sub1.recv(3000).decode(format))
 
