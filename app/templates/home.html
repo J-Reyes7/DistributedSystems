@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ prompt }}{% endblock %}
+{% block body %}
+    <div class="content">
+
+        <h5 style="text-align: center">Please enter a comany's stock symbol</h5>
+        <form action="/" method="POST" style="text-align: center">
+            <input type="text" name = "content" >
+            <input type="submit" value="Submit" >
+        </form>
+
+        {% for element in collection %}
+            <h4 style="text-align: center">
+                {{element.content}}
+            </h4>
+        {% endfor %}
+        
+    </div>    
+{% endblock %}
+
+
+
+
+
+
+
