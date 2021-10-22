@@ -24,7 +24,7 @@ db = sqlite3.connect('phase2.db')
 # test = pd.read_sql_query('Select * from table;',db)
 # test = test.set_index('subs')
 columns = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
-zeros = np.zeros((12,len(raw_msg.columns)))
+zeros = np.zeros((12,len(columns)))
 df = pd.DataFrame(zeros,index=[['sub1','sub1','sub1','sub2','sub2','sub2','sub3','sub3','sub3','sub4','sub4','sub4'],['AAPL','LYFT','AMZN','AAPL','LYFT','AMZN','AAPL','LYFT','AMZN','AAPL','LYFT','AMZN']],columns = columns)
 df.index.names = ['sub ID','publisher']
 df.loc[:,:] = False

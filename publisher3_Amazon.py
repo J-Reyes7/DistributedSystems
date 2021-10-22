@@ -1,7 +1,7 @@
 import socket
 import yfinance as yf 
 import pickle
-
+import time
 
 port = 5000
 format = 'utf-8'
@@ -24,9 +24,9 @@ def publish(event):
     socket_sub1.send(send_length)
     socket_sub1.send(msg)
 
-#while True:
+while True:
 
-event = yf.download(tickers='AMZN', period='1d', interval='1m').iloc[-1]
-# time.sleep(10)
-publish(event)
+    event = yf.download(tickers='AMZN', period='1d', interval='1m').iloc[-1]
+    publish(event)
+    time.sleep(10)
     
