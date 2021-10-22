@@ -27,6 +27,7 @@ def publish(event):
 while True:
 
     event = yf.download(tickers='LYFT', period='1d', interval='1m').iloc[-1]
+    event.name = 'LYFT'
     publish(event)
     time.sleep(10)
     

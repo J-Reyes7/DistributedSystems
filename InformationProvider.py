@@ -29,6 +29,10 @@ df = pd.DataFrame(zeros,index=[['sub1','sub1','sub1','sub2','sub2','sub2','sub3'
 df.index.names = ['sub ID','publisher']
 df.loc[:,:] = False
 
+tickers = ['AAPL','LYFT','AMZN']
+raw_msg_df = pd.DataFrame(columns = tickers)
+
+filtered_msg_df = pd.DataFrame(columns = tickers)
 def handle_publisher(socket_data, source):
     # handles the individual connections between a client and a server
     print('[new connection] ip: %s  port: %s connected.' % (source[0],source[1]))
@@ -40,7 +44,9 @@ def handle_publisher(socket_data, source):
             msg_length = int(msg_length)
             msg = socket_data.recv(msg_length)
             event = pickle.loads(msg)
-            
+            ticker = event.name
+            raw_msg_df[ticker] = event
+            print(raw_msg_df)
             if msg == disconnect_msg:
                 break
     
