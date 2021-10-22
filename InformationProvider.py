@@ -46,8 +46,7 @@ def handle_publisher(socket_data, source):
             event = pickle.loads(msg)
             ticker = event.name
             raw_msg_df[ticker] = event
-        
-            print(raw_msg_df)
+            
             if msg == disconnect_msg:
                 break
     
