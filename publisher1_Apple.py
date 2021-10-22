@@ -23,11 +23,14 @@ def publish(event):
     send_length += b' ' * (header - len(send_length))
     socket_sub1.send(send_length)
     socket_sub1.send(msg)
-
+def advertise(event):
+    event.loc['ad'] = "If you own at least 5 shares you will receive a 50% off the new Macbook Pro!"
+    return event
 while True:
 
-    event = yf.download(tickers='AAPL', period='1d', interval='1m').iloc[-1]
-    event.name = 'AAPL'
+    raw_event = yf.download(tickers='AAPL', period='1d', interval='1m').iloc[-1]
+    raw_event.name = 'AAPL'
+    event = advertise(raw_event)
     publish(event)
     time.sleep(10)
     
