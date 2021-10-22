@@ -39,8 +39,8 @@ def handle_publisher(socket_data, source):
         if msg_length: 
             msg_length = int(msg_length)
             msg = socket_data.recv(msg_length)
-            obj = pickle.loads(msg)
-            print(obj)
+            event = pickle.loads(msg)
+            
             if msg == disconnect_msg:
                 break
     
