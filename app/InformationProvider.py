@@ -26,11 +26,16 @@ db = sqlite3.connect('../phase2.db')
 
 # test = pd.read_sql_query('Select * from table;',db)
 # test = test.set_index('subs')
-columns = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume']
+columns = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Ads']
 zeros = np.zeros((12,len(columns)))
 df = pd.DataFrame(zeros,index=[['sub1','sub1','sub1','sub2','sub2','sub2','sub3','sub3','sub3','sub4','sub4','sub4'],['AAPL','LYFT','AMZN','AAPL','LYFT','AMZN','AAPL','LYFT','AMZN','AAPL','LYFT','AMZN']],columns = columns)
 df.index.names = ['sub ID','publisher']
 df.loc[:,:] = False
+
+df.loc[:,'Ads'] = True
+def unadvertise(df, subscriber,ticker):
+    df.loc[(subscriber, ticker),'Ads'] = False
+    return df
 
 def insert_db():
     pass
@@ -53,7 +58,7 @@ def handle_publisher(socket_data, source):
             print(event)
             ticker = event.name
             raw_msg_df[ticker] = event
-            
+
             if msg == disconnect_msg:
                 break
     
@@ -71,19 +76,21 @@ def start():
 def filter_msg_data(msg):
     data = {}
     r = []
-    order = ['open','high','low','close','adjclose','volume',]
+    count = 0
+    order = ['open','high','low','close','adjclose','volume','ads']
     msg_split = msg.split('&')
     for e in msg_split:
         key, value = e.split("=")
         if value == str(0):
             value = False
         if value == str(1):
+            count += 1
             value = True
         data[key] = value
     for i in order:
         r.append(data.get(i, False))
 
-    return data, r
+    return data, r, count
 
 if __name__ == '__main__':
     # THREAD FOR INFORMATION PROVIDER
@@ -96,7 +103,7 @@ if __name__ == '__main__':
 
     @app.route('/sub')
     def dynamic_subscribers(subscriber):
-
+        # Make a
         return render_template(str(subscriber) + "_data.html")
 
     @app.route('/', methods=['POST', 'GET'])
@@ -114,15 +121,18 @@ if __name__ == '__main__':
             # THIS IS THE MSG WE WANT TO USE TO UPDATE SUB/UNSUB
             # print(send_msg)
 
-            data, topics = filter_msg_data(send_msg)  # LIST OF TRUE/FALSE VALUES IN ORDER
-            topics = numpy.array(topics)
-            subscriber = data.get('username', 'None')
-            ticker = data.get('content', 'None')
-            # print(topics)
-            # print(subscriber)
-            # print(ticker)
-            df.loc[subscriber, ticker] = topics
-            print(df)
+            data, topics, length = filter_msg_data(send_msg)  # LIST OF TRUE/FALSE VALUES IN ORDER
+            if length >= 3:
+                topics = numpy.array(topics)
+                subscriber = data.get('username', 'None').lower()
+                ticker = data.get('content', 'None').upper()
+                if data.get('ads', False):
+                    unadvertise(df, subscriber, ticker)
+                print(topics)
+                print(subscriber)
+                print(ticker)
+                df.loc[subscriber, ticker] = topics
+                print(df)
 
 
             return redirect('/')
