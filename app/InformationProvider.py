@@ -5,6 +5,7 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import pickle
+import numpy
 from flask import Flask, render_template, request, redirect, url_for
 
 port = 5000
@@ -67,6 +68,23 @@ def start():
         thread = threading.Thread(target=handle_publisher, args = (socket_data, source ))
         thread.start()
 
+def filter_msg_data(msg):
+    data = {}
+    r = []
+    order = ['open','high','low','close','adjclose','volume',]
+    msg_split = msg.split('&')
+    for e in msg_split:
+        key, value = e.split("=")
+        if value == str(0):
+            value = False
+        if value == str(1):
+            value = True
+        data[key] = value
+    for i in order:
+        r.append(data.get(i, False))
+
+    return data, r
+
 if __name__ == '__main__':
     # THREAD FOR INFORMATION PROVIDER
     web_thread = threading.Thread(target=start)
@@ -76,11 +94,14 @@ if __name__ == '__main__':
     print("Client-Handler online.")
     app = Flask(__name__)
 
+    @app.route('/sub')
+    def dynamic_subscribers(subscriber):
+
+        return render_template(str(subscriber) + "_data.html")
+
     @app.route('/', methods=['POST', 'GET'])
     def home_page():
         if request.method == 'POST':
-            # print(request.form)
-
             send_msg = ""
             first = True
             for item in request.form:
@@ -91,11 +112,18 @@ if __name__ == '__main__':
                     send_msg += "&"+str(item)+"="+str(request.form.get(item, 0))
 
             # THIS IS THE MSG WE WANT TO USE TO UPDATE SUB/UNSUB
-            print(send_msg)
+            # print(send_msg)
 
-            csymbol = request.form['content']
-            ip_addr = request.remote_addr
-            # print(csymbol, ip_addr)
+            data, topics = filter_msg_data(send_msg)  # LIST OF TRUE/FALSE VALUES IN ORDER
+            topics = numpy.array(topics)
+            subscriber = data.get('username', 'None')
+            ticker = data.get('content', 'None')
+            # print(topics)
+            # print(subscriber)
+            # print(ticker)
+            df.loc[subscriber, ticker] = topics
+            print(df)
+
 
             return redirect('/')
         else:
