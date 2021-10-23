@@ -33,44 +33,104 @@ df.index.names = ['sub ID','publisher']
 df.loc[:,:] = False
 
 df.loc[:,'Ads'] = True
-def unadvertise(df, subscriber,ticker):
-    df.loc[(subscriber, ticker),'Ads'] = False
+subscribers = []
+
+
+def addNewSubscriberToDf(df, username):
+    df.loc[(username,'AAPL'),:] = False
+    df.loc[(username,'AAPL'),'Ads'] = True
+
+    df.loc[(username, 'LYFT'), :] = False
+    df.loc[(username, 'LYFT'), 'Ads'] = True
+
+    df.loc[(username, 'AMZN'), :] = False
+    df.loc[(username, 'AMZN'), 'Ads'] = True
+
     return df
 
-def insert_db():
-    pass
+def unadvertise(df, subscriber, ticker):
+    df.loc[(subscriber, ticker),'Ads'] = False
+    # df.loc[(subscriber, ticker,),'Ads'] = False
+    return df
+
+def unsubscribe(df, subscriber, ticker):
+    df.loc[(subscriber, ticker), :] = False
+    return df
+
 
 tickers = ['AAPL','LYFT','AMZN']
-raw_msg_df = pd.DataFrame(columns = tickers)
+raw_msg_df = pd.DataFrame(columns=tickers)
 
 filtered_msg_df = pd.DataFrame(columns = tickers)
 def handle_publisher(socket_data, source):
     # handles the individual connections between a client and a server
     print('[new connection] ip: %s  port: %s connected.' % (source[0],source[1]))
     while True:
-        #msg_length = socket_data.recv(header)
         msg_length = socket_data.recv(header).decode(format)
         
         if msg_length: 
             msg_length = int(msg_length)
             msg = socket_data.recv(msg_length)
             event = pickle.loads(msg)
-            print(event)
+            # print(event)
             ticker = event.name
             raw_msg_df[ticker] = event
+
+            # Append subscribers to list
+            for e in df.index.values:
+                if e[0] not in subscribers:
+                    subscribers.append(e[0])
+
+            for sub in subscribers:
+                raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
+                filter_ = (df.loc[sub,ticker]).tolist()
+                # print(raw)
+                # print(filter_)
+                final = raw[filter_].tolist()
+                print(final)
+                set_html_page(sub, ticker, final)
+                # render_html(sub, ticker, final)
+
+                # print(raw.transpose().columns)
+
+                # final = raw[raw.transpose().columns[filter_]]
+                # print(final)
+
+                # filter_ = df.loc[sub,ticker]
+                # print(raw[raw[filter_]])
+                # filter_ = raw[df.loc[sub, ticker]]
+                # print(filter_)
+            # eventList = event.tolist()
+            #
+            # render_html(ticker, eventList)
+
 
             if msg == disconnect_msg:
                 break
     
     socket_data.close()
 
+def set_html_page(sub, ticker, data):
+    print("setting html")
+    file_dir = "templates/" + str(sub) + "_data.html"
+    html = open("templates/home.html", "r").read()
+    with open(file_dir, "w") as f:
+        for d in data:
+            print(d)
+            index = html.index("{{element.content}}")
+            html = html[:index] + str(d) + html[index:]
+        html = html.replace("{{element.content}}", "")
+        f.write(html)
+    f.close()
+    # print(html)
+    # return render_template(file_dir, prompt=str(sub) + "_" + str(ticker), collection=data)
 
 def start():
     socket_server.listen()
     print("Server listening...")
     while True:
         socket_data, source = socket_server.accept() 
-        thread = threading.Thread(target=handle_publisher, args = (socket_data, source ))
+        thread = threading.Thread(target=handle_publisher, args=(socket_data, source))
         thread.start()
 
 def filter_msg_data(msg):
@@ -101,10 +161,13 @@ if __name__ == '__main__':
     print("Client-Handler online.")
     app = Flask(__name__)
 
-    @app.route('/sub')
+    @app.route('/<string:subscriber>')
     def dynamic_subscribers(subscriber):
-        # Make a
-        return render_template(str(subscriber) + "_data.html")
+        if subscriber in subscribers:
+            print(str(subscriber) + "_data.html")
+            return render_template(str(subscriber) + "_data.html")
+        else:
+            return redirect("/")
 
     @app.route('/', methods=['POST', 'GET'])
     def home_page():
@@ -118,24 +181,35 @@ if __name__ == '__main__':
                 else:
                     send_msg += "&"+str(item)+"="+str(request.form.get(item, 0))
 
-            # THIS IS THE MSG WE WANT TO USE TO UPDATE SUB/UNSUB
-            # print(send_msg)
-
             data, topics, length = filter_msg_data(send_msg)  # LIST OF TRUE/FALSE VALUES IN ORDER
-            if length >= 3:
-                topics = numpy.array(topics)
-                subscriber = data.get('username', 'None').lower()
-                ticker = data.get('content', 'None').upper()
-                if data.get('ads', False):
+            topics = numpy.array(topics)
+            subscriber = data.get('username', None).lower()
+            ticker = data.get('content', None).upper()
+            # print(topics)
+            # print(subscriber)
+            # print(ticker)
+            # print(data)
+
+            if (length >= 3 and subscriber != None and ticker != "") or (subscriber != "" and ticker != "" and data.get('unsubscribe', False)):
+                if not dict(list(df.index)).get(subscriber, False):
+                    print("Not in df")
+                    addNewSubscriberToDf(df, subscriber)
+                if data.get('unsubscribe', False):
+                    print(f"Un-subscribed to {ticker}")
+                    unsubscribe(df, subscriber, ticker)
+                if not data.get('ads', False):
+                    print("Unadvertise")
                     unadvertise(df, subscriber, ticker)
-                print(topics)
-                print(subscriber)
-                print(ticker)
-                df.loc[subscriber, ticker] = topics
+
+
+                # print(topics)
+                # print(subscriber)
+                # print(df)
+                df.loc[subscriber, ticker,:] = topics
                 print(df)
-
-
-            return redirect('/')
+            # file_dir = file_dir = "templates/" + str(subscriber) + "_data.html"
+            # return render_template(file_dir, prompt=ticker, collection=)
+            return redirect('/' + str(subscriber))
         else:
             prompt = "Please enter comany's stock symbol"
             return render_template('home.html', prompt=prompt)
