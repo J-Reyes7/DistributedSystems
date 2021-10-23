@@ -46,6 +46,8 @@ def addNewSubscriberToDf(df, username):
     df.loc[(username, 'AMZN'), :] = False
     df.loc[(username, 'AMZN'), 'Ads'] = True
 
+    subscribers.append(username)
+
     return df
 
 def unadvertise(df, subscriber, ticker):
@@ -87,7 +89,7 @@ def handle_publisher(socket_data, source):
                 # print(raw)
                 # print(filter_)
                 final = raw[filter_].tolist()
-                print(final)
+                # print(final)
                 set_html_page(sub, ticker, final)
                 # render_html(sub, ticker, final)
 
@@ -111,16 +113,19 @@ def handle_publisher(socket_data, source):
     socket_data.close()
 
 def set_html_page(sub, ticker, data):
-    print("setting html")
+    # print("setting html")
     file_dir = "templates/" + str(sub) + "_data.html"
     html = open("templates/home.html", "r").read()
     with open(file_dir, "w") as f:
         for d in data:
-            print(d)
+            # print(d)
             index = html.index("{{element.content}}")
-            html = html[:index] + str(d) + html[index:]
+            html = html[:index] + str(d) + "</br>" + html[index:]
         html = html.replace("{{element.content}}", "")
+        html = html.replace("{% for element in collection %}", "")
+        html = html.replace("{% endfor %}", "")
         f.write(html)
+        # print(html)
     f.close()
     # print(html)
     # return render_template(file_dir, prompt=str(sub) + "_" + str(ticker), collection=data)
@@ -163,8 +168,8 @@ if __name__ == '__main__':
 
     @app.route('/<string:subscriber>')
     def dynamic_subscribers(subscriber):
+        print(subscribers)
         if subscriber in subscribers:
-            print(str(subscriber) + "_data.html")
             return render_template(str(subscriber) + "_data.html")
         else:
             return redirect("/")
