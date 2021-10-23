@@ -24,9 +24,14 @@ def publish(event):
     socket_sub1.send(send_length)
     socket_sub1.send(msg)
 
+def advertise(event):
+    event.loc['ad'] = "If you own at least 15 shares of our stock you will receive Amazon Prime for FREE!"
+    return event
 while True:
 
-    event = yf.download(tickers='AMZN', period='1d', interval='1m').iloc[-1]
+    raw_event = yf.download(tickers='AMZN', period='1d', interval='1m').iloc[-1]
+    raw_event.name = 'AMZN'
+    event = advertise(raw_event)
     publish(event)
     time.sleep(10)
     
