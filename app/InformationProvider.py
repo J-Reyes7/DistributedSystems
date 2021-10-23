@@ -18,7 +18,7 @@ attach = (host_ip, port)
 socket_server.bind(attach)
 
 
-db = sqlite3.connect('phase2.db')
+db = sqlite3.connect('../phase2.db')
 
 # subscriber_df.to_sql('subsciber',db,if_exists='replace',index=True,index_label='subs')
 # filteredmsg_df.to_sql('filtered',db,if_exists='replace',index=True,index_label='subs')
@@ -31,19 +31,21 @@ df = pd.DataFrame(zeros,index=[['sub1','sub1','sub1','sub2','sub2','sub2','sub3'
 df.index.names = ['sub ID','publisher']
 df.loc[:,:] = False
 
+def insert_db():
+    pass
+
 def handle_publisher(socket_data, source):
     # handles the individual connections between a client and a server
     print('[new connection] ip: %s  port: %s connected.' % (source[0],source[1]))
     while True:
         #msg_length = socket_data.recv(header)
         msg_length = socket_data.recv(header).decode(format)
-        print(msg_length)
         
         if msg_length: 
             msg_length = int(msg_length)
             msg = socket_data.recv(msg_length)
-            print(msg)
             event = pickle.loads(msg)
+            print(event)
             
             if msg == disconnect_msg:
                 break
@@ -59,31 +61,43 @@ def start():
         thread = threading.Thread(target=handle_publisher, args = (socket_data, source ))
         thread.start()
 
+if __name__ == '__main__':
+    # THREAD FOR INFORMATION PROVIDER
+    web_thread = threading.Thread(target=start)
+    web_thread.start()
 
-
-
-
-def app():
+    # MAIN THREAD HOSTING CLIENT-SIDE
     print("Client-Handler online.")
     app = Flask(__name__)
-
-    app.run(host='localhost', port=8000)
 
     @app.route('/', methods=['POST', 'GET'])
     def home_page():
         if request.method == 'POST':
+            # print(request.form)
+
+            send_msg = ""
+            first = True
+            for item in request.form:
+                if first:
+                    first = False
+                    send_msg += str(item)+"="+str(request.form.get(item, 0))
+                else:
+                    send_msg += "&"+str(item)+"="+str(request.form.get(item, 0))
+
+            # THIS IS THE MSG WE WANT TO USE TO UPDATE SUB/UNSUB
+            print(send_msg)
 
             csymbol = request.form['content']
+            ip_addr = request.remote_addr
+            # print(csymbol, ip_addr)
 
             return redirect('/')
         else:
             prompt = "Please enter comany's stock symbol"
             return render_template('home.html', prompt=prompt)
             # return render_template('home.html', prompt=prompt, collection=collection)
+    app.run(host='localhost', port=8000)
     # app.run(host="0.0.0.0",port=8000)
 
-if __name__ == '__main__':
-    web_thread = threading.Thread(target=app)
-    web_thread.start()
-    start()
+
 
