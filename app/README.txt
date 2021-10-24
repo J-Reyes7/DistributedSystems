@@ -1,19 +1,13 @@
 How to deploy:
-1) Build image frome Dockerfile
-2) Use this image to create a container using interactive mode. Since the Dockerfile exposes port 5000, please specify the ports using the following format (desired host port number):5000. 
-3) Once inside the container use the following to initialize the database:
-    - python3
-    - from app import db
-    - db.create_all()
-4) Use exit() to exit python's interactive mode 
-5) With the database now initialized, use flask run --host=0.0.0.0 to start the server
-
+1) Build image from Dockerfile
+2) Use this image to create a container which hosts the website for clients to use. Since the Dockerfile exposes port 5000 and 8000, please specify the ports using the following format (desired host port number):5000, same for 8000.
+3) Use docker build -t <image_name> . to create the docker image
+4) Use docker container run --publish <port:port> -d(detached can be emitted) <image_name> to run the container
+5) Now that the broker container is running, you can use the website to send messages to the broker for sub/unsub with topics included.
+6) Make sure the publishers also are dockerized using the same method from 1 to 4
 
 Description of design: 
-I used flask for my web framework and sqlite3 for my database. When the client submits 
-a GET request the server uses the else block of the home_page function to collect any
-database entries. An updated HTML page is then rendered and served to the client. The 
-server handles a POST request in the if block of the home_page function. A 'symbols' 
-object is first created using the data the client provided and subsequently added to 
-the database. A GET request is then submitted and an updated HTML page is generated 
-and served to the client. 
+We used Flask to deploy the client part of the project. This allows multiple clients to sub and unsub to the broker.
+The broker takes a query string from the clients response in Flask and filters the request to the username and topics
+from the specified ticker. The information is then put into a textfile for that specific user and the information provider
+uses the textfile to generate personal webpages to render to each user.

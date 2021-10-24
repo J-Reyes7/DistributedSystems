@@ -8,5 +8,5 @@ RUN pip3 install -r requirements.txt
 #RUN export FLASK_APP=app.py
 EXPOSE 5000
 EXPOSE 5001
-ENTRYPOINT ["/bin/sh"]
+ENTRYPOINT ["python"]
 CMD ["publisher1_Apple.py"]
