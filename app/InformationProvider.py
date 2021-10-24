@@ -91,7 +91,7 @@ def handle_publisher(socket_data, source):
                 raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
                 filter_ = (df.loc[sub,ticker]).tolist()
                 final = raw[filter_].tolist()
-                print(final)
+                # print(final)
                 write_data(sub, ticker, final)
                 # set_html_page(sub, ticker, final)
 
@@ -113,19 +113,10 @@ def write_data(sub, ticker, data):
         for line in lines:
             if ticker not in line:
                 copy.append(line)
-        print(copy)
+        # print(copy)
     with open("textfiles/" + sub + "_data.txt", "w") as f:
         for c in copy:
             f.write(c)
-        # lines = f.readlines()
-        # print(f"lines:{lines}")
-        # for line in lines:
-        #     data = line.split(",")
-        #     if data[0] != ticker:
-        #         copy.append(line)
-        # for e in copy:
-        #     f.write(e+"\n")
-        # print(ticker, data)
         f.write(ticker+",")
         for d in data:
             f.write(str(d)+",")
@@ -237,31 +228,13 @@ if __name__ == '__main__':
                     unadvertise(df, subscriber, ticker)
 
                 df.loc[subscriber, ticker,:] = topics
-                print(df)
-                # time.sleep(3)
+                print(f"Updated df: {df}")
             return redirect('/' + str(subscriber))
-        # else:
-            # file_dir = "textfiles/sub1_data.txt"
-            #
-            # with open(file_dir, "r") as f:
-            #     lines = f.readlines()
-            #     collection = []
-            #     first = True
-            #     for line in lines:
-            #         if line.strip("\r\n") != "":
-            #             if first:
-            #                 first = False
-            #                 ticker = line.strip("\r\n")
-            #             else:
-            #                 collection.append(line.strip("\r\n"))
-            # f.close()
-            # print(type(ticker), type(collection))
-            # return render_template('home.html', prompt=ticker, collection=collection)
         else:
             prompt = "Please enter comany's stock symbol"
             return render_template('home.html', prompt=prompt)
-    app.run(host='localhost', port=8000)
-    # app.run(host="0.0.0.0",port=8000)
+    # app.run(host='localhost', port=8000)
+    app.run(host="0.0.0.0", port=8000)
 
 
 
