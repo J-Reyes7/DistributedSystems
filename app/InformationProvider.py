@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 import pickle
 import numpy
-from flask import Flask, render_template, request, redirect, url_for
+import os
+import time
+from shutil import copyfile
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+
+global_counter = 0
 
 port = 5000
 format = 'utf-8'
@@ -14,7 +19,7 @@ header = 64
 host_ip = socket.gethostbyname(socket.gethostname())
 disconnect_msg = '!disconnnect'
 
-socket_server = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
+socket_server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 attach = (host_ip, port)
 socket_server.bind(attach)
 
@@ -46,7 +51,7 @@ def addNewSubscriberToDf(df, username):
     df.loc[(username, 'AMZN'), :] = False
     df.loc[(username, 'AMZN'), 'Ads'] = True
 
-    subscribers.append(username)
+    # subscribers.append(username)
 
     return df
 
@@ -74,7 +79,6 @@ def handle_publisher(socket_data, source):
             msg_length = int(msg_length)
             msg = socket_data.recv(msg_length)
             event = pickle.loads(msg)
-            # print(event)
             ticker = event.name
             raw_msg_df[ticker] = event
 
@@ -86,49 +90,61 @@ def handle_publisher(socket_data, source):
             for sub in subscribers:
                 raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
                 filter_ = (df.loc[sub,ticker]).tolist()
-                # print(raw)
-                # print(filter_)
                 final = raw[filter_].tolist()
-                # print(final)
-                set_html_page(sub, ticker, final)
-                # render_html(sub, ticker, final)
-
-                # print(raw.transpose().columns)
-
-                # final = raw[raw.transpose().columns[filter_]]
-                # print(final)
-
-                # filter_ = df.loc[sub,ticker]
-                # print(raw[raw[filter_]])
-                # filter_ = raw[df.loc[sub, ticker]]
-                # print(filter_)
-            # eventList = event.tolist()
-            #
-            # render_html(ticker, eventList)
-
+                print(final)
+                write_data(sub, ticker, final)
+                # set_html_page(sub, ticker, final)
 
             if msg == disconnect_msg:
                 break
     
     socket_data.close()
 
+def write_data(sub, ticker, data):
+    copy = []
+    with open("textfiles/" + sub + "_copy.txt", "w") as f:
+        f.close()
+    try:
+        copyfile("textfiles/" + sub + "_data.txt", "textfiles/" + sub + "_copy.txt")
+    except:
+        pass
+    with open("textfiles/" + sub + "_copy.txt", "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            if ticker not in line:
+                copy.append(line)
+        print(copy)
+    with open("textfiles/" + sub + "_data.txt", "w") as f:
+        for c in copy:
+            f.write(c)
+        # lines = f.readlines()
+        # print(f"lines:{lines}")
+        # for line in lines:
+        #     data = line.split(",")
+        #     if data[0] != ticker:
+        #         copy.append(line)
+        # for e in copy:
+        #     f.write(e+"\n")
+        # print(ticker, data)
+        f.write(ticker+",")
+        for d in data:
+            f.write(str(d)+",")
+        f.write("\n")
+        f.close()
+
 def set_html_page(sub, ticker, data):
-    # print("setting html")
     file_dir = "templates/" + str(sub) + "_data.html"
+    file_dir = "templates/test" + str(global_counter) + ".html"
     html = open("templates/home.html", "r").read()
     with open(file_dir, "w") as f:
         for d in data:
-            # print(d)
             index = html.index("{{element.content}}")
             html = html[:index] + str(d) + "</br>" + html[index:]
         html = html.replace("{{element.content}}", "")
         html = html.replace("{% for element in collection %}", "")
         html = html.replace("{% endfor %}", "")
         f.write(html)
-        # print(html)
     f.close()
-    # print(html)
-    # return render_template(file_dir, prompt=str(sub) + "_" + str(ticker), collection=data)
 
 def start():
     socket_server.listen()
@@ -168,9 +184,23 @@ if __name__ == '__main__':
 
     @app.route('/<string:subscriber>')
     def dynamic_subscribers(subscriber):
-        print(subscribers)
+        # file_dir = str(subscriber) + "_data.html"
+        # file_dir = "templates/test.html"
+        file_dir = "textfiles/" + str(subscriber) + "_data.txt"
+
         if subscriber in subscribers:
-            return render_template(str(subscriber) + "_data.html")
+            with open(file_dir, "r") as f:
+                lines = f.readlines()
+                collection = []
+                for line in lines:
+                    ticker_data = line.split(",")
+                    for data in ticker_data:
+                        collection.append(data)
+            f.close()
+            # print(ticker, collection)
+            return render_template("home.html", collection=collection)
+            # return send_from_directory("html","/templates/test.html")
+            # return render_template(file_dir)
         else:
             return redirect("/")
 
@@ -206,19 +236,30 @@ if __name__ == '__main__':
                     print("Unadvertise")
                     unadvertise(df, subscriber, ticker)
 
-
-                # print(topics)
-                # print(subscriber)
-                # print(df)
                 df.loc[subscriber, ticker,:] = topics
                 print(df)
-            # file_dir = file_dir = "templates/" + str(subscriber) + "_data.html"
-            # return render_template(file_dir, prompt=ticker, collection=)
+                # time.sleep(3)
             return redirect('/' + str(subscriber))
+        # else:
+            # file_dir = "textfiles/sub1_data.txt"
+            #
+            # with open(file_dir, "r") as f:
+            #     lines = f.readlines()
+            #     collection = []
+            #     first = True
+            #     for line in lines:
+            #         if line.strip("\r\n") != "":
+            #             if first:
+            #                 first = False
+            #                 ticker = line.strip("\r\n")
+            #             else:
+            #                 collection.append(line.strip("\r\n"))
+            # f.close()
+            # print(type(ticker), type(collection))
+            # return render_template('home.html', prompt=ticker, collection=collection)
         else:
             prompt = "Please enter comany's stock symbol"
             return render_template('home.html', prompt=prompt)
-            # return render_template('home.html', prompt=prompt, collection=collection)
     app.run(host='localhost', port=8000)
     # app.run(host="0.0.0.0",port=8000)
 
