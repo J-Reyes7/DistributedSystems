@@ -157,9 +157,14 @@ def handle_publisher(socket_data, source):
                     write_data(sub, ticker, final)
                     # set_html_page(sub, ticker, final)
                 
-            else: # received event is from ip... need to add new sub to df and update
-                    df = addNewSubscriberToDf(df, username)
-                    pass # use subscription info to update dataframe like you did in phase 2
+            else: # received event is from ip
+                #getusername = event[0] (subinfo)
+                if username not in df index :
+                    #df = addNewSubscriberToDf(df, username)
+                    #update df like in phase 2
+                else:
+                    #just update df
+                    
     
 
 def write_data(sub, ticker, data):
