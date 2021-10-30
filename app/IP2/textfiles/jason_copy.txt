@@ -1,0 +1,3 @@
+AMZN,If you own at least 15 shares of our stock you will receive Amazon Prime for FREE!,
+AAPL,If you own at least 5 shares you will receive a 50% off the new Macbook Pro!,
+LYFT,48.380001068115234,48.29999923706055,48.310001373291016,

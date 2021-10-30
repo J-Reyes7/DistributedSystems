@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ prompt }}{% endblock %}
+{% block body %}
+<div class="content" xmlns="http://www.w3.org/1999/html">
+
+        <!--SCRIPT TAKEN FROM ONLINE TO SEND ALL CHECKBOXES WITH 0 IF NOT SELECTED-->
+        <script type="text/javascript" src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
+        <script type="text/javascript">
+        $(document).ready(function() {
+            $("#form").on('submit', function() {
+                $(this + 'input[type=checkbox]:not(:checked)').each(function () {
+                    $(this).attr('checked', true).val(0);
+                });
+            })
+        })
+        </script>
+
+        <h5 style="text-align: center">Please enter a company's stock symbol</h5>
+        <form id="form" action="/" method="POST" style="text-align: center">
+            <label for="username">Username</label>
+            <input id="username" type="text" name="username"><br/>
+            <label for="content">Ticker Symbol</label>
+            <input id="content" type="text" name="content"><br/>
+            <input type="checkbox" id="open" name="open" value="1">
+            <label for="open"> Open</label>
+            <input type="checkbox" id="close" name="close" value="1">
+            <label for="close"> Close</label>
+            <input type="checkbox" id="high" name="high" value="1">
+            <label for="high"> High</label>
+            <input type="checkbox" id="low" name="low" value="1">
+            <label for="low"> Low</label>
+            <input type="checkbox" id="volume" name="volume" value="1">
+            <label for="volume"> Volume</label>
+            <input type="checkbox" id="adjclose" name="adjclose" value="1">
+            <label for="adjclose"> Adj-Close</label>
+            <input type="checkbox" id="ads" name="ads" value="1" checked>
+            <label for="ads"> Advertisement</label>
+            <input type="checkbox" id="unsubscribe" name="unsubscribe" value="1">
+            <label for="unsubscribe"> Unsubscribe</label>
+<!--            <input type="checkbox" id="unadvertisement" name="unadvertisement" value="1">-->
+<!--            <label for="unadvertisement"> Unadvertisement</label>-->
+            </br></br>
+            <input type="submit" value="Submit">
+        </form>
+
+        {% for element in collection %}
+            <h4 style="text-align: center">
+                {{element}}
+            </h4>
+        {% endfor %}
+        
+    </div>    
+{% endblock %}
+
+
+
+
+
+
+
