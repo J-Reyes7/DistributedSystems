@@ -20,11 +20,11 @@ services:
     # that will allow you to execute the service.
     # Here 'server/' corresponds to the path to the server folder
     # that contains the Dockerfile to use.
-    build: server/
+    build: app/
 
     # The command to execute once the image is created.
     # The following command will execute "python ./server.py".
-    command: python ./InformationProvider.py
+#    command: python ./InformationProvider.py
 
     # Remember that we defined in'server/server.py' 1234 as port.
     # If we want to access the server from our computer (outside the container),
@@ -36,17 +36,18 @@ services:
     # we broadcast the server).
     ports:
       - 5000:5000
+      - 8000:8000
 
   # Second service (container): the client.
   # We use the keyword 'client' for the server.
-  sub1:
+  pub1:
     # Here 'client/ corresponds to the path to the client folder
     # that contains the Dockerfile to use.
-    build: sub1/
+    build: pub1/
 
     # The command to execute once the image is created.
     # The following command will execute "python ./client.py".
-    command: python ./subscriber1.py
+#    command: python ./publisher2_Lyft.py
 
     # The keyword 'network_mode' is used to define the network type.
     # Here we define that the container can access to the 'localhost' of the computer.
@@ -58,14 +59,14 @@ services:
     depends_on:
       - server
 
-  sub2:
+  pub2:
     # Here 'client/ corresponds to the path to the client folder
     # that contains the Dockerfile to use.
-    build: sub2/
+    build: pub2/
 
     # The command to execute once the image is created.
     # The following command will execute "python ./client.py".
-    command: python ./subscriber2.py
+    #    command: python ./publisher2_Lyft.py
 
     # The keyword 'network_mode' is used to define the network type.
     # Here we define that the container can access to the 'localhost' of the computer.
@@ -77,33 +78,14 @@ services:
     depends_on:
       - server
 
-  sub3:
+  pub3:
     # Here 'client/ corresponds to the path to the client folder
     # that contains the Dockerfile to use.
-    build: sub3/
+    build: pub3/
 
     # The command to execute once the image is created.
     # The following command will execute "python ./client.py".
-    command: python ./subscriber3.py
-
-    # The keyword 'network_mode' is used to define the network type.
-    # Here we define that the container can access to the 'localhost' of the computer.
-    network_mode: host
-
-    # The keyword'depends_on' allows you to define whether the service
-    # should wait until other services are ready before launching.
-    # Here, we want the 'client' service to wait until the 'server' service is ready.
-    depends_on:
-      - server
-
-  sub4:
-    # Here 'client/ corresponds to the path to the client folder
-    # that contains the Dockerfile to use.
-    build: sub4/
-
-    # The command to execute once the image is created.
-    # The following command will execute "python ./client.py".
-    command: python ./subscriber4.py
+    #    command: python ./publisher2_Lyft.py
 
     # The keyword 'network_mode' is used to define the network type.
     # Here we define that the container can access to the 'localhost' of the computer.

@@ -85,7 +85,11 @@ def SendToIP3(event):
 # subinfo need to include subscriber address before sending to correct broker
 # do for each subscribe or unsubscribe from web UI thread
 def SN(subinfo):
-    getTicker = subinfo[0]
+    data, topics, length = filter_msg_data(subinfo)  # LIST OF TRUE/FALSE VALUES IN ORDER
+    # topics = numpy.array(topics)
+    # subscriber = data.get('username', None).lower()
+    getTicker = data.get('content', None).upper()
+    # getTicker = subinfo[0]
     if getTicker == 'AAPL':
         return ['IP1']
     elif getTicker == 'LYFT':
@@ -93,15 +97,16 @@ def SN(subinfo):
     elif getTicker == 'AMZN':
         return ['IP3']
 
-rvlist = SN(subinfo)
-
-if 'IP1' in rvlist:
-    df = addNewSubscriberToDf(df, username)
-    pass # use subscription info to update dataframe like you did in phase 2
-elif 'IP2' in rvlist:
-    SendToIP2(subinfo)
-elif 'IP3' in rvlist:
-    SendToIP3(subinfo)
+# I put this in the app part so when the sub subscribes, then the sn will be called
+# rvlist = SN(subinfo)
+#
+# if 'IP1' in rvlist:
+#     df = addNewSubscriberToDf(df, username)
+#     pass # use subscription info to update dataframe like you did in phase 2
+# elif 'IP2' in rvlist:
+#     SendToIP2(subinfo)
+# elif 'IP3' in rvlist:
+#     SendToIP3(subinfo)
 
 
 
@@ -164,12 +169,29 @@ def handle_publisher_ip(socket_data, source):
                     # set_html_page(sub, ticker, final)
                 
             else: # received event is from ip
+                #filter the subinfo
+                data, topics, length = filter_msg_data(event)  # LIST OF TRUE/FALSE VALUES IN ORDER
+                topics = numpy.array(topics)
+                subscriber = data.get('username', None).lower()
+                ticker = data.get('content', None).upper()
                 #getusername = event[0] (subinfo)
-                if username not in df index :
+                if not dict(list(df.index)).get(subscriber, False): # CHECKS IF THE SUBSCRIBER IS IN DF
+                    addNewSubscriberToDf(df, subscriber)
+                    if data.get('unsubscribe', False):
+                        print(f"Un-subscribed to {ticker}")
+                        unsubscribe(df, subscriber, ticker)
+                    if not data.get('ads', False):
+                        print("Unadvertise")
+                        unadvertise(df, subscriber, ticker)
+
+                    df.loc[subscriber, ticker, :] = topics
+                    print(f"Updated df: {df}")
                     #df = addNewSubscriberToDf(df, username)
                     #update df like in phase 2
                 else:
+                    pass
                     #just update df
+                    # not sure what to update here
     
     
 
@@ -271,16 +293,16 @@ if __name__ == '__main__':
     @app.route('/', methods=['POST', 'GET'])
     def home_page():
         if request.method == 'POST':
-            send_msg = ""
+            subinfo = ""
             first = True
             for item in request.form:
                 if first:
                     first = False
-                    send_msg += str(item)+"="+str(request.form.get(item, 0))
+                    subinfo += str(item)+"="+str(request.form.get(item, 0))
                 else:
-                    send_msg += "&"+str(item)+"="+str(request.form.get(item, 0))
+                    subinfo += "&"+str(item)+"="+str(request.form.get(item, 0))
 
-            data, topics, length = filter_msg_data(send_msg)  # LIST OF TRUE/FALSE VALUES IN ORDER
+            data, topics, length = filter_msg_data(subinfo)  # LIST OF TRUE/FALSE VALUES IN ORDER
             topics = numpy.array(topics)
             subscriber = data.get('username', None).lower()
             ticker = data.get('content', None).upper()
@@ -292,16 +314,26 @@ if __name__ == '__main__':
             if (length >= 3 and subscriber != None and ticker != "") or (subscriber != "" and ticker != "" and data.get('unsubscribe', False)):
                 if not dict(list(df.index)).get(subscriber, False):
                     print("Not in df")
-                    addNewSubscriberToDf(df, subscriber)
-                if data.get('unsubscribe', False):
-                    print(f"Un-subscribed to {ticker}")
-                    unsubscribe(df, subscriber, ticker)
-                if not data.get('ads', False):
-                    print("Unadvertise")
-                    unadvertise(df, subscriber, ticker)
+                    rvlist = SN(subinfo)
 
-                df.loc[subscriber, ticker,:] = topics
-                print(f"Updated df: {df}")
+                    if 'IP1' in rvlist:
+                        addNewSubscriberToDf(df, subscriber)
+                        if data.get('unsubscribe', False):
+                            print(f"Un-subscribed to {ticker}")
+                            unsubscribe(df, subscriber, ticker)
+                        if not data.get('ads', False):
+                            print("Unadvertise")
+                            unadvertise(df, subscriber, ticker)
+
+                        df.loc[subscriber, ticker, :] = topics
+                        print(f"Updated df: {df}")
+                        # pass  # use subscription info to update dataframe like you did in phase 2
+                    elif 'IP2' in rvlist:
+                        SendToIP2(subinfo)
+                    elif 'IP3' in rvlist:
+                        SendToIP3(subinfo)
+                    # addNewSubscriberToDf(df, subscriber)
+
             return redirect('/' + str(subscriber))
         else:
             prompt = "Please enter subscription details:"
