@@ -17,6 +17,8 @@ IP1_port = 5001
 IP2_port = 5002
 IP3_port = 5003
 
+app_port = 8001
+
 
 format = 'utf-8'
 header = 64 
@@ -338,8 +340,9 @@ if __name__ == '__main__':
         else:
             prompt = "Please enter subscription details:"
             return render_template('home.html', prompt=prompt)
+    # APP WILL RUN ON DIFFERENT PORTS
     # app.run(host='localhost', port=8000)
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=app_port)
 
 
 
