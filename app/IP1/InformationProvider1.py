@@ -38,7 +38,7 @@ zeros = np.zeros((1,len(columns)))
 # df = pd.DataFrame(zeros,index=[['initialize'],['MultiIndex']],columns = columns)
 # df.index.names = ['sub ID','publisher']
 
-df = pd.DataFrame(zeros,index=[['initialize']],columns = columns)
+df = pd.DataFrame(zeros,index=['initialize'],columns = columns)
 df.index.names = ['sub ID']
 
 df.loc[:,:] = False
@@ -118,8 +118,8 @@ def SN(subinfo):
 
 
 def addNewSubscriberToDf(df, username):
-    df.loc[(username), :] = False
-    df.loc[(username), 'Ads'] = True
+    df.loc[username, :] = False
+    df.loc[username, 'Ads'] = True
 
     # df.loc[(username,'AAPL'),:] = False
     # df.loc[(username,'AAPL'),'Ads'] = True
@@ -135,20 +135,19 @@ def addNewSubscriberToDf(df, username):
     return df
 
 def unadvertise(df, subscriber):
-    df.loc[(subscriber), 'Ads'] = False
+    df.loc[subscriber, 'Ads'] = False
     # df.loc[(subscriber, ticker), 'Ads'] = False
     return df
 
 def unsubscribe(df, subscriber):
-    df.loc[(subscriber), :] = False
+    df.loc[subscriber, :] = False
     # df.loc[(subscriber, ticker), :] = False
     return df
 
 
 tickers = ['AAPL']
 raw_msg_df = pd.DataFrame(columns=tickers)
-raw_msg_df = pd.DataFrame()
-filtered_msg_df = pd.DataFrame(columns = tickers)
+# filtered_msg_df = pd.DataFrame(columns = tickers)
 
 def handle_publisher_ip(socket_data, source):
     # handles the individual connections between a client and a server
@@ -172,15 +171,14 @@ def handle_publisher_ip(socket_data, source):
                 for e in df.index.values:
                     if e[0] not in subscribers:
                         subscribers.append(e[0])
-                print(df)
+
+                # print(df)
 
                 for sub in subscribers:
-                    raw = (raw_msg_df.to_frame()).transpose()
-                    # print(raw)
-                    filter_ = (df.loc[sub])
-                    # print(filter_)
+                    raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
+                    filter_ = (df.loc[sub].squeeze()).tolist()
                     final = raw[filter_].tolist()
-                    # print(final)
+                    print(final)
                     write_data(sub, ticker, final)
                     # set_html_page(sub, ticker, final)
                 
@@ -189,16 +187,17 @@ def handle_publisher_ip(socket_data, source):
                 topics = numpy.array(topics)
                 subscriber = data.get('username', None).lower()
                 ticker = data.get('content', None).upper()
-                if not dict(list(df.index)).get(subscriber, False): # CHECKS IF THE SUBSCRIBER IS IN DF
+                if subscriber not in df.index.tolist(): # CHECKS IF THE SUBSCRIBER IS IN DF
                     addNewSubscriberToDf(df, subscriber)
                 if not data.get('ads', False):
-                    print("Unadvertise")
+                    print(f"{subscriber} unadvertised to {ticker}")
                     unadvertise(df, subscriber)
-                df.loc[subscriber, ticker, :] = topics
-                print(f"Updated df: {df}")
                 if data.get('unsubscribe', False):
-                    print(f"Un-subscribed to {ticker}")
+                    print(f"{subscriber} unsubscribed to {ticker}")
                     unsubscribe(df, subscriber)
+
+                df.loc[subscriber, :] = topics
+                print(f"Updated df: {df}")
 
 
 
@@ -313,21 +312,21 @@ if __name__ == '__main__':
             ticker = data.get('content', None).upper()
 
             if (length >= 3 and subscriber != None and ticker != "") or (subscriber != "" and ticker != "" and data.get('unsubscribe', False)):
-                if not dict(list(df.index)).get(subscriber, False):
+                if subscriber not in df.index.tolist():
                     print(f'Subscriber {subscriber} is not in df, adding subscribe to df...')
                     rvlist = SN(subinfo)
 
                     # CHECKS IF THE MSGDATA BEING SENT IS BEING HANDLED BY THIS IP, IF NOT SEND THE MSGDATA TO THE RIGHT IP
                     if 'IP1' in rvlist:
                         addNewSubscriberToDf(df, subscriber)
-                        if data.get('unsubscribe', False):
-                            print(f"{subscriber} unsubscribed to {ticker}")
-                            unsubscribe(df, subscriber, ticker)
                         if not data.get('ads', False):
                             print(f"{subscriber} unadvertised to {ticker}")
-                            unadvertise(df, subscriber, ticker)
+                            unadvertise(df, subscriber)
+                        if data.get('unsubscribe', False):
+                            print(f"{subscriber} unsubscribed to {ticker}")
+                            unsubscribe(df, subscriber)
 
-                        df.loc[subscriber, ticker, :] = topics
+                        df.loc[subscriber, :] = topics
                         print(f"Updated df: {df}")
                     elif 'IP2' in rvlist:
                         SendToIP2(subinfo)
