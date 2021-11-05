@@ -1,5 +1,6 @@
 import socket
 import threading
+from app.IP2.InformationProvider2 import SendToIP1
 import yfinance as yf
 import sqlite3
 import numpy as np
@@ -147,7 +148,7 @@ def unsubscribe(df, subscriber):
 
 tickers = ['AAPL']
 raw_msg_df = pd.DataFrame(columns=tickers)
-# filtered_msg_df = pd.DataFrame(columns = tickers)
+filtered_msg_df = pd.DataFrame(columns = tickers)
 
 def handle_publisher_ip(socket_data, source):
     # handles the individual connections between a client and a server
@@ -160,27 +161,34 @@ def handle_publisher_ip(socket_data, source):
             msg = socket_data.recv(msg_length)
             event = pickle.loads(msg)
             if type(event) is type(pd.Series([])):
-                ticker = event.name
-                # print(event)
-                raw_msg_df[ticker] = event
-                # print(raw_msg_df)
-                # addNewSubscriberToDf(df, 'jason')
-                # print(df)
-                # print(df.index.values)
-                # Append subscribers to list
-                for e in df.index.values:
-                    if e not in subscribers:
-                        subscribers.append(e)
+                if type(event.name) is type(()):
+                    # event is filtered msg
+                    ticker, subscriber = event.name[0], event.name[1]
+                    # need to notify subscriber of filtered msg
+                    # filtered_msg_df[ticker] = event?
+                    
+                else:
+                    ticker = event.name
+                    # print(event)
+                    raw_msg_df[ticker] = event
+                    # print(raw_msg_df)
+                    # addNewSubscriberToDf(df, 'jason')
+                    # print(df)
+                    # print(df.index.values)
+                    # Append subscribers to list
+                    for e in df.index.values:
+                        if e not in subscribers:
+                            subscribers.append(e)
 
-                # print(df)
-                print(df)
-                for sub in subscribers:
-                    raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
-                    filter_ = (df.loc[sub].squeeze()).tolist()
-                    final = raw[filter_].tolist()
-                    print(final)
-                    write_data(sub, ticker, final)
-                    # set_html_page(sub, ticker, final)
+                    # print(df)
+                    print(df)
+                    for sub in subscribers:
+                        raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
+                        filter_ = (df.loc[sub].squeeze()).tolist()
+                        final = raw[filter_].tolist()
+                        print(final)
+                        write_data(sub, ticker, final)
+                        # set_html_page(sub, ticker, final)
                 
             else: 
                 data, topics, length = filter_msg_data(event)  # LIST OF TRUE/FALSE VALUES IN ORDER
@@ -198,6 +206,15 @@ def handle_publisher_ip(socket_data, source):
                 else:
                     df.loc[subscriber, :] = topics
                     print(f"Updated df: {df}")
+                raw_msg = raw_msg_df[ticker]
+                filter_msg = raw_msg[df.loc[subscriber,:]]
+                filter_msg.name = (ticker,subscriber)
+                if ticker == 'AAPL':
+                    SendToIP1(filter_msg)
+                elif ticker == 'LYFT':
+                    SendToIP2(filter_msg)
+                elif ticker == 'AMZN':
+                    SendToIP3(filter_msg)
 
 def write_data(sub, ticker, data):
     copy = []
@@ -338,3 +355,5 @@ if __name__ == '__main__':
     # APP WILL RUN ON DIFFERENT PORTS
     # app.run(host='localhost', port=8000)
     app.run(host="0.0.0.0", port=app_port)
+
+
