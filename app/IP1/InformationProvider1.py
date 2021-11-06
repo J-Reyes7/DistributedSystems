@@ -12,14 +12,13 @@ import time
 from shutil import copyfile
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 
-global_counter = 0
+# global_counter = 0
 
 IP1_port = 5001
 IP2_port = 5002
 IP3_port = 5003
 
-app_port = 8001
-
+app_port = 8001 # --CHNG
 
 format = 'utf-8'
 header = 64 
@@ -44,7 +43,11 @@ df.index.names = ['sub ID']
 
 df.loc[:,:] = False
 df.loc[:,'Ads'] = True
+
+
 subscribers = []
+
+# CHANGES TO BE MADE, FIND THIS COMMENT TO KNOW WHICH LINE TO CHANGE: --CHNG
 
 # DICTIONARY TO HOLD WHICH IP HANDLES WHICH SUBSCRIBERS
 handler_map = {}
@@ -53,7 +56,7 @@ handler_map['IP1'] = []
 handler_map['IP2'] = []
 handler_map['IP3'] = []
 
-def SendToIP2(event):
+def SendToIP2(event): # --CHNG
     # create socket
     socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
     IP2_location = (host_ip, IP2_port)
@@ -74,7 +77,7 @@ def SendToIP2(event):
     # send message
     socket_IP1.send(msg)
 
-def SendToIP3(event):
+def SendToIP3(event): # --CHNG
     # create socket
     socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
     IP3_location = (host_ip, IP3_port)
@@ -153,7 +156,7 @@ def unsubscribe(df, subscriber):
     return df
 
 
-tickers = ['AAPL']
+tickers = ['AAPL'] # --CHNG
 raw_msg_df = pd.DataFrame(columns=tickers)
 filtered_msg_df = pd.DataFrame(columns = tickers)
 
@@ -206,25 +209,25 @@ def handle_publisher_ip(socket_data, source):
                         if e not in subscribers:
                             subscribers.append(e)
 
-                    print(df)
+                    print(f'IP1 DF: {df}\n')
 
                     for sub in df.index.tolist():
                         raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
                         filter_ = (df.loc[sub].squeeze()).tolist()
                         final = raw[filter_].tolist()
-                        print(final)
+                        print(f'Filtered data for {ticker} updating for {sub}')
                         if sub in subscriber:
                             write_data(sub, ticker, final)
-                        elif sub in handler_map.get('IP2'):
+                        elif sub in handler_map.get('IP2'): # --CHNG
                             raw_msg = raw_msg_df[ticker]
                             filter_msg = raw_msg[df.loc[subscriber, :]]
                             filter_msg.name = (ticker, subscriber)
-                            SendToIP2(filter_msg)
-                        elif sub in handler_map.get('IP3'):
+                            SendToIP2(filter_msg) # --CHNG
+                        elif sub in handler_map.get('IP3'): # --CHNG
                             raw_msg = raw_msg_df[ticker]
                             filter_msg = raw_msg[df.loc[subscriber, :]]
                             filter_msg.name = (ticker, subscriber)
-                            SendToIP3(filter_msg)
+                            SendToIP3(filter_msg) # --CHNG
                         else:
                             print(f'Something went wrong, sub {sub} is not handled by any IP')
 
@@ -270,10 +273,10 @@ def handle_publisher_ip(socket_data, source):
                 raw_msg = raw_msg_df[ticker]
                 filter_msg = raw_msg[df.loc[subscriber,:]]
                 filter_msg.name = (ticker,subscriber)
-                if handler == 'IP2':
-                    SendToIP2(filter_msg)
-                elif handler == 'IP3':
-                    SendToIP3(filter_msg)
+                if handler == 'IP2': # --CHNG
+                    SendToIP2(filter_msg) # --CHNG
+                elif handler == 'IP3': # --CHNG
+                    SendToIP3(filter_msg) # --CHNG
                 else:
                     print("Some edge case was not checked or something is wrong with the message sending")
 
@@ -300,19 +303,19 @@ def write_data(sub, ticker, data):
         f.write("\n")
         f.close()
 
-def set_html_page(sub, ticker, data):
-    file_dir = "templates/" + str(sub) + "_data.html"
-    file_dir = "templates/test" + str(global_counter) + ".html"
-    html = open("templates/home.html", "r").read()
-    with open(file_dir, "w") as f:
-        for d in data:
-            index = html.index("{{element.content}}")
-            html = html[:index] + str(d) + "</br>" + html[index:]
-        html = html.replace("{{element.content}}", "")
-        html = html.replace("{% for element in collection %}", "")
-        html = html.replace("{% endfor %}", "")
-        f.write(html)
-    f.close()
+# def set_html_page(sub, ticker, data):
+#     file_dir = "templates/" + str(sub) + "_data.html"
+#     file_dir = "templates/test" + str(global_counter) + ".html"
+#     html = open("templates/home.html", "r").read()
+#     with open(file_dir, "w") as f:
+#         for d in data:
+#             index = html.index("{{element.content}}")
+#             html = html[:index] + str(d) + "</br>" + html[index:]
+#         html = html.replace("{{element.content}}", "")
+#         html = html.replace("{% for element in collection %}", "")
+#         html = html.replace("{% endfor %}", "")
+#         f.write(html)
+#     f.close()
 
 def start():
     socket_server.listen()
@@ -383,7 +386,7 @@ if __name__ == '__main__':
                     subinfo += "&"+str(item)+"="+str(request.form.get(item, 0))
 
             # IN THE QUERY MESSAGE, ALSO INCLUDE WHICH IP IT CAME FROM
-            handler = "IP1" # CHANGE THIS LINE TO THE CORRESPONDING IP HANDLER
+            handler = "IP1" # CHANGE THIS LINE TO THE CORRESPONDING IP HANDLER # --CHNG
             subinfo += "&handler=" + handler
 
             data, topics, length = filter_msg_data(subinfo)  # LIST OF TRUE/FALSE VALUES IN ORDER
@@ -394,7 +397,7 @@ if __name__ == '__main__':
             if (length >= 3 and subscriber != None and ticker != "") or (subscriber != "" and ticker != "" and data.get('unsubscribe', False)):
                     rvlist = SN(subinfo)
                     # CHECKS IF THE MSGDATA BEING SENT IS BEING HANDLED BY THIS IP, IF NOT SEND THE MSGDATA TO THE RIGHT IP
-                    if 'IP1' in rvlist:
+                    if 'IP1' in rvlist: # --CHNG
                         if subscriber not in df.index.tolist():
                             print(f'Subscriber {subscriber} is not in df, adding subscribe to df...')
                             addNewSubscriberToDf(df, subscriber)
@@ -407,9 +410,9 @@ if __name__ == '__main__':
                         else:
                             df.loc[subscriber, :] = topics
                             print(f"Updated df: {df}")
-                    elif 'IP2' in rvlist:
+                    elif 'IP2' in rvlist: # --CHNG
                         SendToIP2(subinfo)
-                    elif 'IP3' in rvlist:
+                    elif 'IP3' in rvlist: # --CHNG
                         SendToIP3(subinfo)
 
             return redirect('/' + str(subscriber))
