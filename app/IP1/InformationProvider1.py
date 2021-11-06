@@ -46,6 +46,13 @@ df.loc[:,:] = False
 df.loc[:,'Ads'] = True
 subscribers = []
 
+# DICTIONARY TO HOLD WHICH IP HANDLES WHICH SUBSCRIBERS
+handler_map = {}
+# INITIALIZE handler map
+handler_map['IP1'] = []
+handler_map['IP2'] = []
+handler_map['IP3'] = []
+
 def SendToIP2(event):
     # create socket
     socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
@@ -160,13 +167,30 @@ def handle_publisher_ip(socket_data, source):
             msg_length = int(msg_length)
             msg = socket_data.recv(msg_length)
             event = pickle.loads(msg)
+
+            # IF THE MESSAGE RECEIVED IS THE FILTERED MESSAGE FROM ANOTHER CLIENT, WE NEED TO WRITE THIS DATA ONTO THIS DATABASE
+            # THIS IS TO UPDATE EACH SUBSCRIBER'S INFO SO WE CAN PROPERLY NOTIFY EACH SUBSCRIBER THAT THIS IP HANDLES
+            # THE WAY SUBSCRIBERS ARE NOTIFIED IS THAT EACH USER WILL HAVE THEIR OWN TXT FILE, THAT TXT FILE IS USED TO GENERATE A HTML PAGE AND RENDERED ON THE WEBSITE WITH THE UPDATED DATA FROM EACH PUBLISHER
+            # WHAT WRITE_DATA DOES, IS IT TAKES A FILTERED MESSAGE AND STORES IT IN EACH SUBSCRIBER'S TXT FILE (WRITE_DATA TAKES SUBSCRIBER, TICKER, AND DATA IN FORM OF A LIST)
             if type(event) is type(pd.Series([])):
                 if type(event.name) is type(()):
+                    # TAKE THE FILTERED MESSAGE AND WRITE_DATA
                     # event is filtered msg
                     ticker, subscriber = event.name[0], event.name[1]
+
+                    filtered_msg_df[ticker] = event
+
+                    data = filtered_msg_df[ticker].tolist()
+
+                    write_data(subscriber, ticker, data)
                     # need to notify subscriber of filtered msg
                     # filtered_msg_df[ticker] = event?
-                    
+
+                # THIS ASSUMES THAT THE MESSAGE IS A PUBLISHER PUBLISH, WE NEED TO FILTER THE RAW DATA FROM THE YF API THROUGH THE DATAFRAME AND WRITE EACH FILTERED MESSAGE TO DATABASE
+                # IF THE SUBSCRIBER IS HANDLED BY ANOTHER IP, THEN SEND TO THAT IP, THE FILTERED MESSAGE
+                # WE NEED A WAY TO REMEMBER WHICH IP HANDLES WHICH SUBSCRIBERS
+
+                # EVERYTIME A PUBLISHER PUBLISHES, WE NEED TO CHECK FOR ALL SUBS IN DF, IF THEY ARE IN SUBSCRIBERS (IF THEY ARE, THEN WRITE DATA TO THIS IP, IF NOT SEND THE FILTERED MESSAGE TO THE RIGHT IP)
                 else:
                     ticker = event.name
                     # print(event)
@@ -175,22 +199,47 @@ def handle_publisher_ip(socket_data, source):
                     # addNewSubscriberToDf(df, 'jason')
                     # print(df)
                     # print(df.index.values)
+                    print(f'df.index.values = {df.index.values}')
+                    print(f'df.index.tolist() = {df.index.tolist()}')
                     # Append subscribers to list
                     for e in df.index.values:
                         if e not in subscribers:
                             subscribers.append(e)
 
-                    # print(df)
                     print(df)
-                    for sub in subscribers:
+
+                    for sub in df.index.tolist():
                         raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
                         filter_ = (df.loc[sub].squeeze()).tolist()
                         final = raw[filter_].tolist()
                         print(final)
-                        write_data(sub, ticker, final)
-                        # set_html_page(sub, ticker, final)
-                
-            else: 
+                        if sub in subscriber:
+                            write_data(sub, ticker, final)
+                        elif sub in handler_map.get('IP2'):
+                            raw_msg = raw_msg_df[ticker]
+                            filter_msg = raw_msg[df.loc[subscriber, :]]
+                            filter_msg.name = (ticker, subscriber)
+                            SendToIP2(filter_msg)
+                        elif sub in handler_map.get('IP3'):
+                            raw_msg = raw_msg_df[ticker]
+                            filter_msg = raw_msg[df.loc[subscriber, :]]
+                            filter_msg.name = (ticker, subscriber)
+                            SendToIP3(filter_msg)
+                        else:
+                            print(f'Something went wrong, sub {sub} is not handled by any IP')
+
+                    # OLD METHOD, USED TO FILTER RAW PUBLISH DATA AND UPDATE EACH SUBSCRIBER TXT FILE HANDLED BY THIS IP ONLY
+                    # for sub in subscribers:
+                    #     raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
+                    #     filter_ = (df.loc[sub].squeeze()).tolist()
+                    #     final = raw[filter_].tolist()
+                    #     print(final)
+                    #     write_data(sub, ticker, final)
+                    #     # set_html_page(sub, ticker, final)
+
+            # THE MESSAGE RECEIVED IS A QUERY MESSAGE (sub=john&ticker=aapl&topics=high+low+volume), USE THIS MESSAGE TO UPDATE DATAFRAME
+            # WHERE THIS QUERY MESSAGE CAME FROM??? ADD A QUERY THAT REMEMBERS WHICH IP HANDLES WHICH SUBSCRIBER
+            else:
                 data, topics, length = filter_msg_data(event)  # LIST OF TRUE/FALSE VALUES IN ORDER
                 topics = numpy.array(topics)
                 subscriber = data.get('username', None).lower()
@@ -206,15 +255,27 @@ def handle_publisher_ip(socket_data, source):
                 else:
                     df.loc[subscriber, :] = topics
                     print(f"Updated df: {df}")
+
+                # Why do we need this? The message sent to this ip means that this ip is the right ip to handle this ticker
+                # We don't need to send this to another ip (each ip will hold the dataframe for each sub that subbed to the corresponding ticker)
+                # eg: Andrew subbed to aapl so ip1 will store Andrew in its dataframe
+                # Everytime aapl publishes, Andrew's boolean series (in the dataframe) is used to filter the raw aapl publish, then this filtered message is sent to the right ip (that Andrew used to sub to aapl in this case maybe ip3)
+
+
+                # MAP THE IP THAT HANDLES THE SUBSCRIBER FOR FUTURE PUBLISH TO WORK PROPERLY
+                handler = data.get('handler', None)
+                handler_map[handler].append(subscriber)
+
+                # RAW_MSG_DF CONTAINS THE MOST RECENT YF PUBLISHED DATA (RAW) THIS NEEDS TO BE FILTERED AND SENT TO THE RIGHT IP
                 raw_msg = raw_msg_df[ticker]
                 filter_msg = raw_msg[df.loc[subscriber,:]]
                 filter_msg.name = (ticker,subscriber)
-                if ticker == 'AAPL':
-                    SendToIP1(filter_msg)
-                elif ticker == 'LYFT':
+                if handler == 'IP2':
                     SendToIP2(filter_msg)
-                elif ticker == 'AMZN':
+                elif handler == 'IP3':
                     SendToIP3(filter_msg)
+                else:
+                    print("Some edge case was not checked or something is wrong with the message sending")
 
 def write_data(sub, ticker, data):
     copy = []
@@ -320,6 +381,10 @@ if __name__ == '__main__':
                     subinfo += str(item)+"="+str(request.form.get(item, 0))
                 else:
                     subinfo += "&"+str(item)+"="+str(request.form.get(item, 0))
+
+            # IN THE QUERY MESSAGE, ALSO INCLUDE WHICH IP IT CAME FROM
+            handler = "IP1" # CHANGE THIS LINE TO THE CORRESPONDING IP HANDLER
+            subinfo += "&handler=" + handler
 
             data, topics, length = filter_msg_data(subinfo)  # LIST OF TRUE/FALSE VALUES IN ORDER
             topics = numpy.array(topics)
