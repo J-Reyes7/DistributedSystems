@@ -217,8 +217,9 @@ def handle_publisher_ip(socket_data, source):
                     # event is filtered msg
                     print(f'Received filtered msg: {event}')
                     ticker, subscriber = event.name[0], event.name[1]
-                    filtered_msg_df[ticker] = event
-                    data = filtered_msg_df[ticker].tolist()
+                    # filtered_msg_df[ticker] = event
+                    # data = filtered_msg_df[ticker].tolist()
+                    data = event.tolist()
                     write_data(subscriber, ticker, data)
                     # need to notify subscriber of filtered msg
                     # filtered_msg_df[ticker] = event?
@@ -309,6 +310,7 @@ def handle_publisher_ip(socket_data, source):
                     print("Some edge case was not checked or something is wrong with the message sending")
 
 def write_data(sub, ticker, data):
+    print(data)
     print(f'Updating {sub}...')
     copy = []
     with open("textfiles/" + sub + "_copy.txt", "w") as f:
@@ -387,20 +389,22 @@ if __name__ == '__main__':
         # file_dir = str(subscriber) + "_data.html"
         # file_dir = "templates/test.html"
         file_dir = "textfiles/" + str(subscriber) + "_data.txt"
-
-        if subscriber in subscribers:
-            with open(file_dir, "r") as f:
-                lines = f.readlines()
-                collection = []
-                for line in lines:
-                    ticker_data = line.split(",")
-                    for data in ticker_data:
-                        collection.append(data)
-            f.close()
-            # print(ticker, collection)
-            return render_template("home.html", collection=collection)
-        else:
-            return redirect("/")
+        try:
+            if subscriber in subscribers:
+                with open(file_dir, "r") as f:
+                    lines = f.readlines()
+                    collection = []
+                    for line in lines:
+                        ticker_data = line.split(",")
+                        for data in ticker_data:
+                            collection.append(data)
+                f.close()
+                # print(ticker, collection)
+                return render_template("home.html", collection=collection)
+        except:
+            pass
+        # else:
+        return redirect("/")
 
     @app.route('/', methods=['POST', 'GET'])
     def home_page():
