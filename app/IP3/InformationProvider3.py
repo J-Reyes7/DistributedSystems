@@ -76,8 +76,8 @@ def initializeIP3toIP2():
     socket_IP3TOIP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_IP3TOIP2_location = (host_ip, 5032)
     socket_IP3TOIP2.bind(socket_IP3TOIP2_location)
-    IP3_location = (host_ip, IP3_port)
-    socket_IP3TOIP2.connect(IP3_location)
+    IP2_location = (host_ip, IP3_port)
+    socket_IP3TOIP2.connect(IP2_location)
     sentTo2 = True
     return socket_IP3TOIP2
 
@@ -216,12 +216,10 @@ def handle_publisher_ip(socket_data, source):
                 if type(event.name) is type(()):
                     # TAKE THE FILTERED MESSAGE AND WRITE_DATA
                     # event is filtered msg
+                    print(f'Received filtered msg: {event}')
                     ticker, subscriber = event.name[0], event.name[1]
-
                     filtered_msg_df[ticker] = event
-
                     data = filtered_msg_df[ticker].tolist()
-
                     write_data(subscriber, ticker, data)
                     # need to notify subscriber of filtered msg
                     # filtered_msg_df[ticker] = event?
@@ -233,20 +231,10 @@ def handle_publisher_ip(socket_data, source):
                 # EVERYTIME A PUBLISHER PUBLISHES, WE NEED TO CHECK FOR ALL SUBS IN DF, IF THEY ARE IN SUBSCRIBERS (IF THEY ARE, THEN WRITE DATA TO THIS IP, IF NOT SEND THE FILTERED MESSAGE TO THE RIGHT IP)
                 else:
                     ticker = event.name
-                    # print(event)
                     raw_msg_df[ticker] = event
-                    # print(raw_msg_df)
-                    # addNewSubscriberToDf(df, 'jason')
-                    # print(df)
-                    # print(df.index.values)
-                    print(f'df.index.values = {df.index.values}')
-                    print(f'df.index.tolist() = {df.index.tolist()}')
-                    # Append subscribers to list
-                    for e in df.index.values:
-                        if e not in subscribers:
-                            subscribers.append(e)
-
-                    print(f'IP1 DF: {df}\n')
+                    # print(f'df.index.values = {df.index.values}')
+                    # print(f'df.index.tolist() = {df.index.tolist()}')
+                    # print(f'IP1 DF: {df}\n')
 
                     for sub in df.index.tolist():
                         raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
@@ -256,14 +244,14 @@ def handle_publisher_ip(socket_data, source):
                         if sub in subscribers:
                             write_data(sub, ticker, final)
                         elif sub in handler_map.get('IP2'):  # --CHNG
-                            raw_msg = raw_msg_df[ticker]
-                            filter_msg = raw_msg[df.loc[subscriber, :]]
-                            filter_msg.name = (ticker, subscriber)
+                            raw_msg = raw_msg_df[ticker].values
+                            filter_msg = raw_msg_df[df.loc[sub, :].values].squeeze()
+                            filter_msg.name = (ticker, sub)
                             SendToIP2(filter_msg)  # --CHNG
                         elif sub in handler_map.get('IP1'):  # --CHNG
-                            raw_msg = raw_msg_df[ticker]
-                            filter_msg = raw_msg[df.loc[subscriber, :]]
-                            filter_msg.name = (ticker, subscriber)
+                            raw_msg = raw_msg_df[ticker].values
+                            filter_msg = raw_msg_df[df.loc[sub, :].values].squeeze()
+                            filter_msg.name = (ticker, sub)
                             SendToIP1(filter_msg)  # --CHNG
                         else:
                             print(f'Something went wrong, sub {sub} is not handled by any IP')
@@ -306,9 +294,12 @@ def handle_publisher_ip(socket_data, source):
                 handler_map[handler].append(subscriber)
 
                 # RAW_MSG_DF CONTAINS THE MOST RECENT YF PUBLISHED DATA (RAW) THIS NEEDS TO BE FILTERED AND SENT TO THE RIGHT IP
-                raw_msg = raw_msg_df[ticker]
-                filter_msg = raw_msg[df.loc[subscriber, :]]
+                raw_msg = raw_msg_df[ticker].values
+                filter_msg = raw_msg_df[df.loc[subscriber, :].values].squeeze()
                 filter_msg.name = (ticker, subscriber)
+                # print(f'type of filtered msg {type(filter_msg)}')
+                # print(f'\r\nraw_msg_df\r\n{raw_msg_df}\r\nraw_msg\r\n{raw_msg}\r\ndf.loc[subscriber,:]\r\n{df.loc[subscriber,:]}\r\nfilter_msg\n{filter_msg}\r\n')
+
                 if handler == 'IP2':  # --CHNG
                     SendToIP2(filter_msg)  # --CHNG
                 elif handler == 'IP1':  # --CHNG
@@ -318,6 +309,7 @@ def handle_publisher_ip(socket_data, source):
 
 
 def write_data(sub, ticker, data):
+    print(f'Updating {sub}...')
     copy = []
     with open("textfiles/" + sub + "_copy.txt", "w") as f:
         f.close()
@@ -440,6 +432,7 @@ if __name__ == '__main__':
                     subscriber != "" and ticker != "" and data.get('unsubscribe', False)):
                 rvlist = SN(subinfo)
                 # CHECKS IF THE MSGDATA BEING SENT IS BEING HANDLED BY THIS IP, IF NOT SEND THE MSGDATA TO THE RIGHT IP
+                subscribers.append(subscriber)
                 if 'IP3' in rvlist:  # --CHNG
                     if subscriber not in df.index.tolist():
                         print(f'Subscriber {subscriber} is not in df, adding subscribe to df...')
