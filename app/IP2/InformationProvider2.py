@@ -55,17 +55,46 @@ handler_map['IP1'] = []
 handler_map['IP2'] = []
 handler_map['IP3'] = []
 
+# INITALIZE SOCKETS TO SEND TO OTHER IPS
+sentTo1 = False
+sentTo3 = False
+socket_IP2TOIP1 = None
+socket_IP2TOIP3 = None
+
+def initializeIP2toIP1():
+    global sentTo1
+    socket_IP2TOIP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    socket_IP2TOIP1_location = (host_ip, 5021)
+    socket_IP2TOIP1.bind(socket_IP2TOIP1_location)
+    IP1_location = (host_ip, IP1_port)
+    socket_IP2TOIP1.connect(IP1_location)
+    sentTo1 = True
+    return socket_IP2TOIP1
+
+def initializeIP2toIP3():
+    global sentTo3
+    socket_IP2TOIP3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket_IP2TOIP3_location = (host_ip, 5023)
+    socket_IP2TOIP3.bind(socket_IP2TOIP3_location)
+    IP3_location = (host_ip, IP3_port)
+    socket_IP2TOIP3.connect(IP3_location)
+    sentTo3 = True
+    return socket_IP2TOIP3
 
 def SendToIP1(event):  # --CHNG
-    # create socket
-    socket_IP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    IP1_location = (host_ip, IP1_port)
-    socket_IP2_location = (host_ip, 5022)
-    # bind socket
-    socket_IP2.bind(socket_IP2_location)
-    # connect publisher socket to IP1
-    socket_IP2.connect(IP1_location)
-    # serialize the pandas Series object into a string representation
+    print(f'Sending to ip1')
+    global socket_IP2TOIP1
+    if not sentTo1:
+        socket_IP2TOIP1 = initializeIP2toIP1()
+    # # create socket
+    # socket_IP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # IP1_location = (host_ip, IP1_port)
+    # socket_IP2_location = (host_ip, 5022)
+    # # bind socket
+    # socket_IP2.bind(socket_IP2_location)
+    # # connect publisher socket to IP1
+    # socket_IP2.connect(IP1_location)
+    # # serialize the pandas Series object into a string representation
     msg = pickle.dumps(event)
     # get length of string representation
     msg_length = len(msg)
@@ -73,21 +102,25 @@ def SendToIP1(event):  # --CHNG
     send_length = str(msg_length).encode(format)
     send_length += b' ' * (header - len(send_length))
     # send message length
-    socket_IP2.send(send_length)
+    socket_IP2TOIP1.send(send_length)
     # send message
-    socket_IP2.send(msg)
+    socket_IP2TOIP1.send(msg)
 
 
 def SendToIP3(event):  # --CHNG
-    # create socket
-    socket_IP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    IP3_location = (host_ip, IP3_port)
-    socket_IP2_location = (host_ip, 5012)
-    # bind socket
-    socket_IP2.bind(socket_IP2_location)
-    # connect publisher socket to IP1
-    socket_IP2.connect(IP3_location)
-    # serialize the pandas Series object into a string representation
+    print(f'Sending to ip3')
+    global socket_IP2TOIP3
+    if not sentTo3:
+        socket_IP2TOIP3 = initializeIP2toIP3()
+    # # create socket
+    # socket_IP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # IP3_location = (host_ip, IP3_port)
+    # socket_IP2_location = (host_ip, 5012)
+    # # bind socket
+    # socket_IP2.bind(socket_IP2_location)
+    # # connect publisher socket to IP1
+    # socket_IP2.connect(IP3_location)
+    # # serialize the pandas Series object into a string representation
     msg = pickle.dumps(event)
     # get length of string representation
     msg_length = len(msg)
@@ -95,9 +128,9 @@ def SendToIP3(event):  # --CHNG
     send_length = str(msg_length).encode(format)
     send_length += b' ' * (header - len(send_length))
     # send message length
-    socket_IP2.send(send_length)
+    socket_IP2TOIP3.send(send_length)
     # send message
-    socket_IP2.send(msg)
+    socket_IP2TOIP3.send(msg)
 
 
 # returns rendezvous node responsible for notifying

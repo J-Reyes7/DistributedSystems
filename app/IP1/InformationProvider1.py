@@ -56,18 +56,46 @@ handler_map['IP1'] = []
 handler_map['IP2'] = []
 handler_map['IP3'] = []
 
-# SET UP NEW SOCKET TO SEND TO OTHER PORTS
+# INITALIZE SOCKETS TO SEND TO OTHER IPS
+sentTo2 = False
+sentTo3 = False
+socket_IP1TOIP2 = None
+socket_IP1TOIP3 = None
+
+def initializeIP1toIP2():
+    global sentTo2
+    socket_IP1TOIP2 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    socket_IP1TOIP2_location = (host_ip, 5012)
+    socket_IP1TOIP2.bind(socket_IP1TOIP2_location)
+    IP2_location = (host_ip, IP2_port)
+    socket_IP1TOIP2.connect(IP2_location)
+    sentTo2 = True
+    return socket_IP1TOIP2
+
+def initializeIP1toIP3():
+    global sentTo3
+    socket_IP1TOIP3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket_IP1TOIP3_location = (host_ip, 5013)
+    socket_IP1TOIP3.bind(socket_IP1TOIP3_location)
+    IP3_location = (host_ip, IP3_port)
+    socket_IP1TOIP3.connect(IP3_location)
+    sentTo3 = True
+    return socket_IP1TOIP3
 
 def SendToIP2(event): # --CHNG
-    # create socket
-    socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
-    IP2_location = (host_ip, IP2_port)
-    socket_IP1_location = (host_ip,5011)
-    # bind socket
-    socket_IP1.bind(socket_IP1_location)
-    # connect publisher socket to IP1
-    socket_IP1.connect(IP2_location) 
-    # serialize the pandas Series object into a string representation
+    print(f'Sending to ip2')
+    global socket_IP1TOIP2
+    if not sentTo2:
+        socket_IP1TOIP2 = initializeIP1toIP2()
+    # # create socket
+    # socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    # IP2_location = (host_ip, IP2_port)
+    # socket_IP1_location = (host_ip,5011)
+    # # bind socket
+    # socket_IP1.bind(socket_IP1_location)
+    # # connect publisher socket to IP1
+    # socket_IP1.connect(IP2_location)
+    # # serialize the pandas Series object into a string representation
     msg = pickle.dumps(event)
     # get length of string representation
     msg_length = len(msg)
@@ -75,20 +103,24 @@ def SendToIP2(event): # --CHNG
     send_length = str(msg_length).encode(format)
     send_length += b' ' * (header - len(send_length))
     # send message length 
-    socket_IP1.send(send_length)
+    socket_IP1TOIP2.send(send_length)
     # send message
-    socket_IP1.send(msg)
+    socket_IP1TOIP2.send(msg)
 
 def SendToIP3(event): # --CHNG
-    # create socket
-    socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
-    IP3_location = (host_ip, IP3_port)
-    socket_IP1_location = (host_ip, 5011)
-    # bind socket
-    socket_IP1.bind(socket_IP1_location)
-    # connect publisher socket to IP1
-    socket_IP1.connect(IP3_location) 
-    # serialize the pandas Series object into a string representation
+    print(f'Sending to ip3')
+    global socket_IP1TOIP3
+    if not sentTo3:
+        socket_IP1TOIP3 = initializeIP1toIP3()
+    # # create socket
+    # socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    # IP3_location = (host_ip, IP3_port)
+    # socket_IP1_location = (host_ip, 5011)
+    # # bind socket
+    # socket_IP1.bind(socket_IP1_location)
+    # # connect publisher socket to IP1
+    # socket_IP1.connect(IP3_location)
+    # # serialize the pandas Series object into a string representation
     msg = pickle.dumps(event)
     # get length of string representation
     msg_length = len(msg)
@@ -96,9 +128,9 @@ def SendToIP3(event): # --CHNG
     send_length = str(msg_length).encode(format)
     send_length += b' ' * (header - len(send_length))
     # send message length 
-    socket_IP1.send(send_length)
+    socket_IP1TOIP3.send(send_length)
     # send message
-    socket_IP1.send(msg)
+    socket_IP1TOIP3.send(msg)
 
 # returns rendezvous node responsible for notifying 
 # subinfo need to include subscriber address before sending to correct broker
@@ -273,6 +305,7 @@ def handle_publisher_ip(socket_data, source):
 
                 # RAW_MSG_DF CONTAINS THE MOST RECENT YF PUBLISHED DATA (RAW) THIS NEEDS TO BE FILTERED AND SENT TO THE RIGHT IP
                 raw_msg = raw_msg_df[ticker]
+                print(f'raw msg df {raw_msg_df}')
                 filter_msg = raw_msg[df.loc[subscriber,:]]
                 filter_msg.name = (ticker,subscriber)
                 if handler == 'IP2': # --CHNG
