@@ -240,7 +240,7 @@ def handle_publisher_ip(socket_data, source):
                         print(f'Filtered data for {ticker} updating for {sub}')
                         if sub in subscribers:
                             write_data(sub, ticker, final)
-                        elif sub in handler_map.get('IP2'): # --CHNG
+                        if sub in handler_map.get('IP2'): # --CHNG
                             raw_msg = raw_msg_df[ticker].values
                             filter_msg = raw_msg_df[df.loc[sub, :].values].squeeze()
                             filter_msg.name = (ticker, sub)

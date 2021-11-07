@@ -14,29 +14,50 @@ services:
   # Here you are free to choose the keyword.
   # It will allow you to define what the service corresponds to.
   # We use the keyword 'server' for the server.
-  server:
-    # The keyword "build" will allow you to define
-    # the path to the Dockerfile to use to create the image
-    # that will allow you to execute the service.
-    # Here 'server/' corresponds to the path to the server folder
-    # that contains the Dockerfile to use.
-    build: app/
-
-    # The command to execute once the image is created.
-    # The following command will execute "python ./server.py".
-#    command: python ./InformationProvider.py
-
-    # Remember that we defined in'server/server.py' 1234 as port.
-    # If we want to access the server from our computer (outside the container),
-    # we must share the content port with our computer's port.
-    # To do this, the keyword 'ports' will help us.
-    # Its syntax is as follows: [port we want on our machine]:[port we want to retrieve in the container]
-    # In our case, we want to use port 1234 on our machine and
-    # retrieve port 1234 from the container (because it is on this port that
-    # we broadcast the server).
+  ip1:
+    build: ip1/
     ports:
-      - 5000:5000
-      - 8000:8000
+      - 5001:5001
+      - 8001:8001
+      - 5012:5012
+      - 5013:5013
+  ip2:
+    build: ip2/
+    ports:
+      - 5002:5002
+      - 8002:8002
+      - 5021:5021
+      - 5023:5023
+  ip3:
+    build: ip3/
+    ports:
+      - 5003:5003
+      - 8003:8003
+      - 5031:5031
+      - 5032:5032
+#  server:
+#    # The keyword "build" will allow you to define
+#    # the path to the Dockerfile to use to create the image
+#    # that will allow you to execute the service.
+#    # Here 'server/' corresponds to the path to the server folder
+#    # that contains the Dockerfile to use.
+#    build: app/
+#
+#    # The command to execute once the image is created.
+#    # The following command will execute "python ./server.py".
+##    command: python ./InformationProvider.py
+#
+#    # Remember that we defined in'server/server.py' 1234 as port.
+#    # If we want to access the server from our computer (outside the container),
+#    # we must share the content port with our computer's port.
+#    # To do this, the keyword 'ports' will help us.
+#    # Its syntax is as follows: [port we want on our machine]:[port we want to retrieve in the container]
+#    # In our case, we want to use port 1234 on our machine and
+#    # retrieve port 1234 from the container (because it is on this port that
+#    # we broadcast the server).
+#    ports:
+#      - 5000:5000
+#      - 8000:8000
 
   # Second service (container): the client.
   # We use the keyword 'client' for the server.
@@ -57,7 +78,8 @@ services:
     # should wait until other services are ready before launching.
     # Here, we want the 'client' service to wait until the 'server' service is ready.
     depends_on:
-      - server
+      - ip1
+#      - server
 
   pub2:
     # Here 'client/ corresponds to the path to the client folder
@@ -76,7 +98,8 @@ services:
     # should wait until other services are ready before launching.
     # Here, we want the 'client' service to wait until the 'server' service is ready.
     depends_on:
-      - server
+      - ip2
+#      - server
 
   pub3:
     # Here 'client/ corresponds to the path to the client folder
@@ -95,4 +118,5 @@ services:
     # should wait until other services are ready before launching.
     # Here, we want the 'client' service to wait until the 'server' service is ready.
     depends_on:
-      - server
+      - ip3
+#      - server
