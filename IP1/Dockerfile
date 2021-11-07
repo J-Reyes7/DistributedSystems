@@ -1,6 +1,6 @@
 FROM python:3.9.1
-COPY . /app
-WORKDIR /app
+COPY . /IP1
+WORKDIR /IP1
 RUN pip install --upgrade pip
 RUN pip install --upgrade pip
 RUN pip3 install -r requirements.txt
