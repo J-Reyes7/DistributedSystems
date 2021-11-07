@@ -26,7 +26,7 @@ host_ip = socket.gethostbyname(socket.gethostname())
 disconnect_msg = '!disconnnect'
 # create socket
 socket_server = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-location = (host_ip, IP1_port)
+location = (host_ip, IP1_port) # --CHNG
 # bind socket
 socket_server.bind(location)
 
@@ -56,11 +56,13 @@ handler_map['IP1'] = []
 handler_map['IP2'] = []
 handler_map['IP3'] = []
 
+# SET UP NEW SOCKET TO SEND TO OTHER PORTS
+
 def SendToIP2(event): # --CHNG
     # create socket
     socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
     IP2_location = (host_ip, IP2_port)
-    socket_IP1_location = (host_ip,IP1_port)
+    socket_IP1_location = (host_ip,5011)
     # bind socket
     socket_IP1.bind(socket_IP1_location)
     # connect publisher socket to IP1
@@ -81,7 +83,7 @@ def SendToIP3(event): # --CHNG
     # create socket
     socket_IP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
     IP3_location = (host_ip, IP3_port)
-    socket_IP1_location = (host_ip,IP1_port)
+    socket_IP1_location = (host_ip, 5011)
     # bind socket
     socket_IP1.bind(socket_IP1_location)
     # connect publisher socket to IP1

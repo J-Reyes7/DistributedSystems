@@ -26,7 +26,7 @@ host_ip = socket.gethostbyname(socket.gethostname())
 disconnect_msg = '!disconnnect'
 # create socket
 socket_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-location = (host_ip, IP1_port)
+location = (host_ip, IP3_port) # --CHNG
 # bind socket
 socket_server.bind(location)
 
