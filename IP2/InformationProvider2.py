@@ -18,7 +18,7 @@ IP1_port = 5001
 IP2_port = 5002
 IP3_port = 5003
 
-app_port = 8003  # --CHNG
+app_port = 8002 # --CHNG
 
 format = 'utf-8'
 header = 64
@@ -26,11 +26,11 @@ host_ip = socket.gethostbyname(socket.gethostname())
 disconnect_msg = '!disconnnect'
 # create socket
 socket_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-location = (host_ip, IP3_port) # --CHNG
+location = (host_ip, IP2_port) # --CHNG
 # bind socket
 socket_server.bind(location)
 
-db = sqlite3.connect('../phase2.db')
+db = sqlite3.connect('../app/phase2.db')
 # subscriber_df.to_sql('subsciber',db,if_exists='replace',index=True,index_label='subs')
 # filteredmsg_df.to_sql('filtered',db,if_exists='replace',index=True,index_label='subs')
 columns = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Ads']
@@ -57,69 +57,43 @@ handler_map['IP3'] = []
 
 # INITALIZE SOCKETS TO SEND TO OTHER IPS
 sentTo1 = False
-sentTo2 = False
-socket_IP3TOIP1 = None
-socket_IP3TOIP2 = None
+sentTo3 = False
+socket_IP2TOIP1 = None
+socket_IP2TOIP3 = None
 
-def initializeIP3toIP1():
+def initializeIP2toIP1():
     global sentTo1
-    socket_IP3TOIP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    socket_IP3TOIP1_location = (host_ip, 5031)
-    socket_IP3TOIP1.bind(socket_IP3TOIP1_location)
+    socket_IP2TOIP1 = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    socket_IP2TOIP1_location = (host_ip, 5021)
+    socket_IP2TOIP1.bind(socket_IP2TOIP1_location)
     IP1_location = (host_ip, IP1_port)
-    socket_IP3TOIP1.connect(IP1_location)
+    socket_IP2TOIP1.connect(IP1_location)
     sentTo1 = True
-    return socket_IP3TOIP1
+    return socket_IP2TOIP1
 
-def initializeIP3toIP2():
-    global sentTo2
-    socket_IP3TOIP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socket_IP3TOIP2_location = (host_ip, 5032)
-    socket_IP3TOIP2.bind(socket_IP3TOIP2_location)
-    IP2_location = (host_ip, IP3_port)
-    socket_IP3TOIP2.connect(IP2_location)
-    sentTo2 = True
-    return socket_IP3TOIP2
-
-def SendToIP2(event):  # --CHNG
-    print(f'Sending to ip2')
-    global socket_IP3TOIP2
-    if not sentTo2:
-        socket_IP3TOIP2 = initializeIP3toIP2()
-    # # create socket
-    # socket_IP3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # IP2_location = (host_ip, IP2_port)
-    # socket_IP3_location = (host_ip, IP3_port)
-    # # bind socket
-    # socket_IP3.bind(socket_IP3_location)
-    # # connect publisher socket to IP1
-    # socket_IP3.connect(IP2_location)
-    # # serialize the pandas Series object into a string representation
-    msg = pickle.dumps(event)
-    # get length of string representation
-    msg_length = len(msg)
-    # convert message length to a string and encode it using utf-8
-    send_length = str(msg_length).encode(format)
-    send_length += b' ' * (header - len(send_length))
-    # send message length
-    socket_IP3TOIP2.send(send_length)
-    # send message
-    socket_IP3TOIP2.send(msg)
-
+def initializeIP2toIP3():
+    global sentTo3
+    socket_IP2TOIP3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket_IP2TOIP3_location = (host_ip, 5023)
+    socket_IP2TOIP3.bind(socket_IP2TOIP3_location)
+    IP3_location = (host_ip, IP3_port)
+    socket_IP2TOIP3.connect(IP3_location)
+    sentTo3 = True
+    return socket_IP2TOIP3
 
 def SendToIP1(event):  # --CHNG
     print(f'Sending to ip1')
-    global socket_IP3TOIP1
+    global socket_IP2TOIP1
     if not sentTo1:
-        socket_IP3TOIP1 = initializeIP3toIP1()
+        socket_IP2TOIP1 = initializeIP2toIP1()
     # # create socket
-    # socket_IP3 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # socket_IP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # IP1_location = (host_ip, IP1_port)
-    # socket_IP3_location = (host_ip, IP3_port)
+    # socket_IP2_location = (host_ip, 5022)
     # # bind socket
-    # socket_IP3.bind(socket_IP3_location)
+    # socket_IP2.bind(socket_IP2_location)
     # # connect publisher socket to IP1
-    # socket_IP3.connect(IP1_location)
+    # socket_IP2.connect(IP1_location)
     # # serialize the pandas Series object into a string representation
     msg = pickle.dumps(event)
     # get length of string representation
@@ -128,9 +102,35 @@ def SendToIP1(event):  # --CHNG
     send_length = str(msg_length).encode(format)
     send_length += b' ' * (header - len(send_length))
     # send message length
-    socket_IP3TOIP1.send(send_length)
+    socket_IP2TOIP1.send(send_length)
     # send message
-    socket_IP3TOIP1.send(msg)
+    socket_IP2TOIP1.send(msg)
+
+
+def SendToIP3(event):  # --CHNG
+    print(f'Sending to ip3')
+    global socket_IP2TOIP3
+    if not sentTo3:
+        socket_IP2TOIP3 = initializeIP2toIP3()
+    # # create socket
+    # socket_IP2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # IP3_location = (host_ip, IP3_port)
+    # socket_IP2_location = (host_ip, 5012)
+    # # bind socket
+    # socket_IP2.bind(socket_IP2_location)
+    # # connect publisher socket to IP1
+    # socket_IP2.connect(IP3_location)
+    # # serialize the pandas Series object into a string representation
+    msg = pickle.dumps(event)
+    # get length of string representation
+    msg_length = len(msg)
+    # convert message length to a string and encode it using utf-8
+    send_length = str(msg_length).encode(format)
+    send_length += b' ' * (header - len(send_length))
+    # send message length
+    socket_IP2TOIP3.send(send_length)
+    # send message
+    socket_IP2TOIP3.send(msg)
 
 
 # returns rendezvous node responsible for notifying
@@ -192,7 +192,7 @@ def unsubscribe(df, subscriber):
     return df
 
 
-tickers = ['AMZN']  # --CHNG
+tickers = ['LYFT']  # --CHNG
 raw_msg_df = pd.DataFrame(columns=tickers)
 filtered_msg_df = pd.DataFrame(columns=tickers)
 
@@ -243,16 +243,16 @@ def handle_publisher_ip(socket_data, source):
                         print(f'Filtered data for {ticker} updating for {sub}')
                         if sub in subscribers:
                             write_data(sub, ticker, final)
-                        elif sub in handler_map.get('IP2'):  # --CHNG
-                            raw_msg = raw_msg_df[ticker].values
-                            filter_msg = raw_msg_df[df.loc[sub, :].values].squeeze()
-                            filter_msg.name = (ticker, sub)
-                            SendToIP2(filter_msg)  # --CHNG
-                        elif sub in handler_map.get('IP1'):  # --CHNG
+                        if sub in handler_map.get('IP1'):  # --CHNG
                             raw_msg = raw_msg_df[ticker].values
                             filter_msg = raw_msg_df[df.loc[sub, :].values].squeeze()
                             filter_msg.name = (ticker, sub)
                             SendToIP1(filter_msg)  # --CHNG
+                        elif sub in handler_map.get('IP3'):  # --CHNG
+                            raw_msg = raw_msg_df[ticker].values
+                            filter_msg = raw_msg_df[df.loc[sub, :].values].squeeze()
+                            filter_msg.name = (ticker, sub)
+                            SendToIP3(filter_msg)  # --CHNG
                         else:
                             print(f'Something went wrong, sub {sub} is not handled by any IP')
 
@@ -268,6 +268,7 @@ def handle_publisher_ip(socket_data, source):
             # THE MESSAGE RECEIVED IS A QUERY MESSAGE (sub=john&ticker=aapl&topics=high+low+volume), USE THIS MESSAGE TO UPDATE DATAFRAME
             # WHERE THIS QUERY MESSAGE CAME FROM??? ADD A QUERY THAT REMEMBERS WHICH IP HANDLES WHICH SUBSCRIBER
             else:
+                print(f'Supposed to be query message: {event}')
                 data, topics, length = filter_msg_data(event)  # LIST OF TRUE/FALSE VALUES IN ORDER
                 topics = numpy.array(topics)
                 subscriber = data.get('username', None).lower()
@@ -300,10 +301,10 @@ def handle_publisher_ip(socket_data, source):
                 # print(f'type of filtered msg {type(filter_msg)}')
                 # print(f'\r\nraw_msg_df\r\n{raw_msg_df}\r\nraw_msg\r\n{raw_msg}\r\ndf.loc[subscriber,:]\r\n{df.loc[subscriber,:]}\r\nfilter_msg\n{filter_msg}\r\n')
 
-                if handler == 'IP2':  # --CHNG
-                    SendToIP2(filter_msg)  # --CHNG
-                elif handler == 'IP1':  # --CHNG
+                if handler == 'IP1':  # --CHNG
                     SendToIP1(filter_msg)  # --CHNG
+                elif handler == 'IP3':  # --CHNG
+                    SendToIP3(filter_msg)  # --CHNG
                 else:
                     print("Some edge case was not checked or something is wrong with the message sending")
 
@@ -391,7 +392,6 @@ if __name__ == '__main__':
         # file_dir = str(subscriber) + "_data.html"
         # file_dir = "templates/test.html"
         file_dir = "textfiles/" + str(subscriber) + "_data.txt"
-
         if subscriber in subscribers:
             with open(file_dir, "r") as f:
                 lines = f.readlines()
@@ -402,6 +402,7 @@ if __name__ == '__main__':
                         collection.append(data)
             f.close()
             # print(ticker, collection)
+            # print(collection)
             return render_template("home.html", collection=collection)
         else:
             return redirect("/")
@@ -420,7 +421,7 @@ if __name__ == '__main__':
                     subinfo += "&" + str(item) + "=" + str(request.form.get(item, 0))
 
             # IN THE QUERY MESSAGE, ALSO INCLUDE WHICH IP IT CAME FROM
-            handler = "IP3"  # CHANGE THIS LINE TO THE CORRESPONDING IP HANDLER # --CHNG
+            handler = "IP2"  # CHANGE THIS LINE TO THE CORRESPONDING IP HANDLER # --CHNG
             subinfo += "&handler=" + handler
 
             data, topics, length = filter_msg_data(subinfo)  # LIST OF TRUE/FALSE VALUES IN ORDER
@@ -433,7 +434,7 @@ if __name__ == '__main__':
                 rvlist = SN(subinfo)
                 # CHECKS IF THE MSGDATA BEING SENT IS BEING HANDLED BY THIS IP, IF NOT SEND THE MSGDATA TO THE RIGHT IP
                 subscribers.append(subscriber)
-                if 'IP3' in rvlist:  # --CHNG
+                if 'IP2' in rvlist:  # --CHNG
                     if subscriber not in df.index.tolist():
                         print(f'Subscriber {subscriber} is not in df, adding subscribe to df...')
                         addNewSubscriberToDf(df, subscriber)
@@ -446,10 +447,10 @@ if __name__ == '__main__':
                     else:
                         df.loc[subscriber, :] = topics
                         print(f"Updated df: {df}")
-                elif 'IP2' in rvlist:  # --CHNG
-                    SendToIP2(subinfo)
                 elif 'IP1' in rvlist:  # --CHNG
                     SendToIP1(subinfo)
+                elif 'IP3' in rvlist:  # --CHNG
+                    SendToIP3(subinfo)
 
             return redirect('/' + str(subscriber))
         else:
