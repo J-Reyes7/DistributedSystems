@@ -20,7 +20,7 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 app_port = 8000
 
 # <----------------------------------------CONSUMER THREADS---------------------------------------->
-raw_msg_df = pd.DataFrame(columns=['Apple','Lyft','Amazon']) # raw_msg_df to use to filter with our database df
+raw_msg_df = pd.DataFrame(columns=['AAPL','LYFT','AMZN']) # raw_msg_df to use to filter with our database df
 
 def handle_thread1():
     print("Started consumer1")
@@ -29,8 +29,8 @@ def handle_thread1():
                          bootstrap_servers='localhost:9094',
                          value_deserializer=pickle.loads)
     for message in consumer1:
-        print("consumer1{}".format(message))
-        raw_msg_df['Amazon'] = message.value
+        # print("consumer1{}".format(message))
+        raw_msg_df['AMZN'] = message.value
 
 
 thread1 = threading.Thread(target=handle_thread1)
@@ -43,8 +43,8 @@ def handle_thread2():
                          bootstrap_servers='localhost:9093',
                          value_deserializer=pickle.loads)
     for message in consumer2:
-        print("consumer2{}".format(message))
-        raw_msg_df['Lyft'] = message.value
+        # print("consumer2{}".format(message))
+        raw_msg_df['LYFT'] = message.value
 
 
 thread2 = threading.Thread(target=handle_thread2)
@@ -57,8 +57,8 @@ def handle_thread3():
                          bootstrap_servers='localhost:9092',
                          value_deserializer=pickle.loads)
     for message in consumer3:
-        print("consumer3{}".format(message))
-        raw_msg_df['Apple'] = message.value
+        # print("consumer3{}".format(message))
+        raw_msg_df['AAPL'] = message.value
 
 thread3 = threading.Thread(target=handle_thread3)
 thread3.start()
@@ -115,7 +115,8 @@ def addNewSubscriberToDf(df, username):
     df.loc[(username, 'AMZN'), 'Ads'] = True
 
     return df
-
+addNewSubscriberToDf(df, 'John')
+df.loc[('John','AAPL'),:] = True
 def unadvertise(df, subscriber, ticker):
     df.loc[(subscriber, ticker),'Ads'] = False
     return df
@@ -133,17 +134,16 @@ def update():
     while True:
 
         try:
-            print(f'raw_msg_df: {raw_msg_df}')
-            
             for sub in dict(df.index.tolist()):
                 aapl_topics = (df.loc[sub, 'AAPL']).tolist()
                 lyft_topics = (df.loc[sub, 'LYFT']).tolist()
                 amzn_topics = (df.loc[sub, 'AMZN']).tolist()
-
+                print(aapl_topics)
+                print(raw_msg_df['AAPL'])
                 raw_aapl = (raw_msg_df['AAPL'].to_frame()).transpose().loc['AAPL']
                 raw_lyft = (raw_msg_df['LYFT'].to_frame()).transpose().loc['LYFT']
                 raw_amzn = (raw_msg_df['AMZN'].to_frame()).transpose().loc['AMZN']
-
+                print(raw_aapl)
                 filter_aapl = raw_aapl[aapl_topics].tolist()
                 filter_lyft = raw_lyft[lyft_topics].tolist()
                 filter_amzn = raw_amzn[amzn_topics].tolist()
@@ -151,13 +151,16 @@ def update():
                 # raw = (raw_msg_df[ticker].to_frame()).transpose().loc[ticker]
                 # filter_ = (df.loc[sub].squeeze()).tolist()
                 # final = raw[filter_].tolist()
-                # print(f'Updating for {sub}')
+                print(f'Updating for {sub}')
+                print(filter_aapl)
+                # print(raw_msg_df)
                 if sub in subscribers:
                     write_data(sub, 'AAPL', filter_aapl)
                     write_data(sub, 'LYFT', filter_lyft)
                     write_data(sub, 'AMZN', filter_amzn)
-        except:
-            # print(f'Empty raw_msg_df: {raw_msg_df}')
+        except Exception as e:
+            print(f'ERROR: {e}')
+            print(f'Empty raw_msg_df: {raw_msg_df}')
             pass
         time.sleep(5)
 
