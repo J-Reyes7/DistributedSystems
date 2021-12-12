@@ -16,3 +16,22 @@ Then on our server app, we have our consumers that consume these messages from t
 
 The data is filtered the same way using series of boolean values and dataframes of the live data from the API.
 Nothing was changed about the web application except small changes that had to be made due to the change in structure from personal brokers to kafka brokers.
+
+NOTICE
+
+If for some reason the replications and partitions don't show more than one, just do the following:
+
+>docker exec -it zookeeper-1 bash
+
+>/kafka/bin/kafka-topics.sh --zookeeper zookeeper-1:2181 --alter --topic Apple --partitions 2
+
+>cat > increase-replication-factor.json
+{"version":1,
+  "partitions":[
+     {"topic":"Apple","partition":0,"replicas":[0,1,2]},
+     {"topic":"Apple","partition":1,"replicas":[0,1,2]}
+]}
+
+>/kafka/bin/kafka-reassign-partitions.sh --zookeeper zookeeper-1:2181 --reassignment-json-file increase-replication-factor.json --execute
+
+>/kafka/bin/kafka-topics.sh --zookeeper zookeeper-1:2181 --describe --topic Apple
