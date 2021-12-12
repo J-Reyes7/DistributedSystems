@@ -1,0 +1,86 @@
+version: "3.8"
+services:
+  zookeeper-1:
+    container_name: zookeeper-1
+    image: aimvector/zookeeper:2.7.0
+    build:
+      context: ./zookeeper
+    volumes:
+    - ./config/zookeeper-1/zookeeper.properties:/kafka/config/zookeeper.properties
+    - ./data/zookeeper-1/:/tmp/zookeeper/
+    networks:
+    - kafka
+  kafka-1:
+    container_name: kafka-1
+    image: aimvector/kafka:2.7.0
+    build: 
+      context: .
+    volumes:
+    - ./config/kafka-1/server.properties:/kafka/config/server.properties
+    - ./data/kafka-1/:/tmp/kafka-logs/
+    networks:
+    - kafka
+  kafka-2:
+    container_name: kafka-2
+    image: aimvector/kafka:2.7.0
+    build: 
+      context: .
+    volumes:
+    - ./config/kafka-2/server.properties:/kafka/config/server.properties
+    - ./data/kafka-2/:/tmp/kafka-logs/
+    networks:
+    - kafka
+  kafka-3:
+    container_name: kafka-3
+    image: aimvector/kafka:2.7.0
+    build: 
+      context: .
+    volumes:
+    - ./config/kafka-3/server.properties:/kafka/config/server.properties
+    - ./data/kafka-3/:/tmp/kafka-logs/
+    networks:
+    - kafka
+  server:
+    build: ../server/
+    container_name: server
+    ports:
+      - 8000:8000
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    networks:
+      - kafka
+  pub1:
+    build: ../pub1/
+    container_name: ApplePub
+    # network_mode: host
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    networks:
+      - kafka
+  pub2:
+    build: ../pub2/
+    container_name: LyftPub
+    # network_mode: host
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    networks:
+      - kafka
+  pub3:
+    build: ../pub3/
+    container_name: AmazonPub
+    # network_mode: host
+    depends_on:
+      - kafka-1
+      - kafka-2
+      - kafka-3
+    networks:
+      - kafka
+networks: 
+  kafka:
+    name: kafka

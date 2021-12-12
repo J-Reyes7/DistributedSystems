@@ -1,3 +1,0 @@
-AAPL,If you own at least 5 shares you will receive a 50% off the new Macbook Pro!,
-LYFT,48.314998626708984,48.380001068115234,48.29999923706055,If you own at least 5 shares you will receive 40% off Lyft Pink!,
-AMZN,3336.889892578125,3334.580078125,41351.0,If you own at least 15 shares of our stock you will receive Amazon Prime for FREE!,

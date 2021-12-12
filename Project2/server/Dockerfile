@@ -1,12 +1,12 @@
 FROM python:3.9.1
-COPY . /IP1
-WORKDIR /IP1
+COPY . /server
+WORKDIR /server
 RUN pip install --upgrade pip
 RUN pip install --upgrade pip
 RUN pip3 install -r requirements.txt
-EXPOSE 5001
-EXPOSE 5012
-EXPOSE 5013
-EXPOSE 8001
+EXPOSE 8000
+EXPOSE 9092
+EXPOSE 9093
+EXPOSE 9094
 ENTRYPOINT ["python"]
-CMD ["InformationProvider1.py"]
+CMD ["Subscribers.py"]

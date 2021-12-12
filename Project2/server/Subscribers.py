@@ -26,7 +26,7 @@ def handle_thread1():
     print("Started consumer1")
     consumer1 = KafkaConsumer('Amazon',
                          group_id='group1',
-                         bootstrap_servers='localhost:9094',
+                         bootstrap_servers='kafka-3:9094',
                          value_deserializer=pickle.loads)
     for message in consumer1:
         # print("consumer1{}".format(message))
@@ -40,7 +40,7 @@ def handle_thread2():
     print("Started consumer2")
     consumer2 = KafkaConsumer('Lyft',
                          group_id='group2',
-                         bootstrap_servers='localhost:9093',
+                         bootstrap_servers='kafka-2:9093',
                          value_deserializer=pickle.loads)
     for message in consumer2:
         # print("consumer2{}".format(message))
@@ -54,7 +54,7 @@ def handle_thread3():
     print("Started consumer3")
     consumer3 = KafkaConsumer('Apple',
                          group_id='group3',
-                         bootstrap_servers='localhost:9092',
+                         bootstrap_servers='kafka-1:9092',
                          value_deserializer=pickle.loads)
     for message in consumer3:
         # print("consumer3{}".format(message))
@@ -138,8 +138,8 @@ def update():
                 aapl_topics = (df.loc[sub, 'AAPL']).tolist()
                 lyft_topics = (df.loc[sub, 'LYFT']).tolist()
                 amzn_topics = (df.loc[sub, 'AMZN']).tolist()
-                print(aapl_topics)
-                print(raw_msg_df['AAPL'])
+                # print(aapl_topics)
+                # print(raw_msg_df['AAPL'])
                 raw_aapl = (raw_msg_df['AAPL'].to_frame()).transpose().loc['AAPL']
                 raw_lyft = (raw_msg_df['LYFT'].to_frame()).transpose().loc['LYFT']
                 raw_amzn = (raw_msg_df['AMZN'].to_frame()).transpose().loc['AMZN']
